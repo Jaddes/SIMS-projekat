@@ -29,26 +29,22 @@ public partial class MainWindow : Window
         _currentUser = null;
         Root.Children.Clear();
 
-        var page = new Grid { Margin = new Thickness(48) };
-        page.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.2, GridUnitType.Star) });
-        page.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        var intro = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20) };
-        intro.Children.Add(HeroBlock(
-            "SIMS",
-            "Pametan pregled zgrada, stanova i zahteva",
-            "Prijavite se, izaberite ulogu i nastavite kroz jasne kartice i akcije."));
-        intro.Children.Add(InfoStrip("Brzi tok", "Admin dodaje zgradu, upravnik je odobrava, stanar salje zahtev za stan."));
-        Grid.SetColumn(intro, 0);
-        page.Children.Add(intro);
-
+        var page = new Grid
+        {
+            MinHeight = 560,
+            Margin = new Thickness(24),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
         var loginCard = Card();
-        loginCard.Width = 390;
+        loginCard.Width = 460;
+        loginCard.MaxWidth = 460;
         loginCard.VerticalAlignment = VerticalAlignment.Center;
         loginCard.HorizontalAlignment = HorizontalAlignment.Center;
+        loginCard.Padding = new Thickness(28);
         var form = new StackPanel();
-        form.Children.Add(Heading("Dobrodosli", 28));
-        form.Children.Add(Text("Unesite email i lozinku. Sistem sam prepoznaje ulogu korisnika.", 13, "#64748B"));
+        form.Children.Add(Heading("Dobrodosli", 26));
+        form.Children.Add(Text("Unesite email i lozinku. Sistem sam prepoznaje ulogu korisnika.", 13, "#52677A"));
         var email = Input("Email");
         var password = Password("Lozinka");
         _message = Message();
@@ -82,9 +78,13 @@ public partial class MainWindow : Window
         form.Children.Add(loginButton);
         form.Children.Add(registerButton);
         loginCard.Child = form;
-        Grid.SetColumn(loginCard, 1);
         page.Children.Add(loginCard);
-        Root.Children.Add(page);
+        Root.Children.Add(new ScrollViewer
+        {
+            Content = page,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        });
     }
 
     private void ShowTenantRegistration()
@@ -166,10 +166,10 @@ public partial class MainWindow : Window
         var shell = new Grid();
         shell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         shell.RowDefinitions.Add(new RowDefinition());
-        shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
+        shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
         shell.ColumnDefinitions.Add(new ColumnDefinition());
 
-        var top = new Grid { Background = Brush("#FFFFFF"), Height = 76, Margin = new Thickness(0, 0, 0, 1) };
+        var top = new Grid { Background = Brush("#FFFFFF"), Height = 66, Margin = new Thickness(0, 0, 0, 1) };
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
         top.ColumnDefinitions.Add(new ColumnDefinition());
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -178,12 +178,12 @@ public partial class MainWindow : Window
         var identity = Stack(
             Heading("SIMS Buildings", 22),
             Text($"{_currentUser.FirstName} {_currentUser.LastName} - {RoleName(_currentUser)}", 13, "#52677A"));
-        identity.Margin = new Thickness(18, 10, 0, 0);
+        identity.Margin = new Thickness(18, 8, 0, 0);
         Grid.SetColumn(identity, 1);
         top.Children.Add(identity);
 
         var logout = Button("Logout", "DangerButton");
-        logout.Margin = new Thickness(0, 12, 20, 12);
+        logout.Margin = new Thickness(0, 10, 18, 10);
         logout.MinWidth = 132;
         logout.Click += (_, _) => ShowLogin();
         Grid.SetColumn(logout, 2);
@@ -207,14 +207,14 @@ public partial class MainWindow : Window
         }
         else if (_currentUser is Administrator)
         {
-            nav.Children.Add(NavButton("Dodaj upravnika", ShowAdminAddManager));
-            nav.Children.Add(NavButton("Dodaj zgradu", ShowAdminAddBuilding));
+            nav.Children.Add(NavButton("Upravnici", ShowAdminManagers));
+            nav.Children.Add(NavButton("Zgrade CRUD", ShowAdminBuildings));
         }
 
         Grid.SetRow(nav, 1);
         shell.Children.Add(nav);
 
-        _content = new ContentControl { Margin = new Thickness(24) };
+        _content = new ContentControl { Margin = new Thickness(18) };
         Grid.SetRow(_content, 1);
         Grid.SetColumn(_content, 1);
         shell.Children.Add(_content);
@@ -231,7 +231,7 @@ public partial class MainWindow : Window
             "Zgrade su centralni pregled.",
             "Akcije ispod su prilagodjene vasoj ulozi.",
             "Nakon svake izmene liste se osvezavaju.");
-        var cards = Wrap();
+        var cards = DashboardGrid();
         cards.Children.Add(ActionCard("Zgrade", "Pretraga, filteri, sortiranje i pregled kartica.", "#0F766E", ShowBuildings));
         if (_currentUser is Tenant)
         {
@@ -246,8 +246,8 @@ public partial class MainWindow : Window
         }
         else if (_currentUser is Administrator)
         {
-            cards.Children.Add(ActionCard("Dodaj upravnika", "Registrujte upravnika i odmah ga koristite za zgrade.", "#2563EB", ShowAdminAddManager));
-            cards.Children.Add(ActionCard("Dodaj zgradu", "Unesite adresu, lokaciju i JMBG upravnika.", "#EA580C", ShowAdminAddBuilding));
+            cards.Children.Add(ActionCard("Upravnici", "Pregled, pretraga, dodavanje, izmena i brisanje.", "#2563EB", ShowAdminManagers));
+            cards.Children.Add(ActionCard("Zgrade CRUD", "View, add, edit i delete za zgrade.", "#EA580C", ShowAdminBuildings));
         }
 
         panel.Children.Add(cards);
@@ -261,27 +261,27 @@ public partial class MainWindow : Window
             "Zgrade",
             "Pretrazite odobrene zgrade kao katalog. JMBG upravnika se ne prikazuje.",
             "Unesite ulicu, naselje, grad ili sifru zgrade.",
-            "Napredni filteri pokrivaju spratove i stanove.",
-            "Sortiranje po spratovima je dostupno jednim klikom.");
+            "Za stanove izaberite sobe, stanare ili kombinaciju.",
+            "Sortiranje nudi rastuci i opadajuci redosled.");
         var filter = Card();
-        filter.Padding = new Thickness(24);
+        filter.Padding = new Thickness(18);
 
         var quickSearch = Input("npr. Liman, Bulevar, Grbavica");
         _searchBox = quickSearch;
-        quickSearch.MinHeight = 58;
-        quickSearch.FontSize = 16;
-        var field = Combo("Bez dodatnog filtera", "Adresa", "Naselje", "Broj spratova", "Broj soba", "Broj stanara", "Sobe & stanari", "Sobe | stanari");
+        quickSearch.MinHeight = 42;
+        quickSearch.FontSize = 14;
+        var field = Combo("Bez dodatnog filtera", "Adresa", "Naselje", "Broj spratova", "Samo broj soba", "Samo broj stanara", "Sobe & stanari (oba)", "Sobe | stanari (bilo koji)");
         var query = Input("Vrednost");
         var room = Input("Broj soba");
         var tenants = Input("Broj stanara");
-        var sort = new CheckBox { Content = "Sortiraj po spratovima", Margin = new Thickness(0, 14, 18, 0), VerticalAlignment = VerticalAlignment.Center };
+        var sort = Combo("Bez sortiranja", "Spratovi rastuce", "Spratovi opadajuce");
         var apply = Button("Primeni", "PrimaryButton");
         apply.IsDefault = true;
         apply.Content = "Pretrazi";
-        apply.MinWidth = 170;
-        apply.MinHeight = 58;
+        apply.MinWidth = 140;
+        apply.MinHeight = 42;
         apply.VerticalAlignment = VerticalAlignment.Bottom;
-        apply.Margin = new Thickness(14, 0, 0, 10);
+        apply.Margin = new Thickness(12, 0, 0, 8);
 
         var searchRow = new Grid { Margin = new Thickness(0, 8, 0, 14) };
         searchRow.ColumnDefinitions.Add(new ColumnDefinition());
@@ -292,24 +292,24 @@ public partial class MainWindow : Window
         Grid.SetColumn(apply, 1);
         searchRow.Children.Add(apply);
 
-        var advancedGrid = new UniformGrid { Columns = 4 };
+        var advancedGrid = new UniformGrid { Columns = 5 };
         AddAll(advancedGrid,
             Field("Dodatni filter", field),
             Field("Vrednost", query),
             Field("Broj soba", room),
-            Field("Broj stanara", tenants));
+            Field("Broj stanara", tenants),
+            Field("Sortiranje", sort));
         var advancedPanel = new Border
         {
             Background = Brush("#F8FBFC"),
             BorderBrush = Brush("#D7E5EA"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(16),
+            Padding = new Thickness(12),
             Child = Stack(
                 Heading("Napredni filteri", 16),
-                Text("Koristite ih kada zelite tacan broj spratova, soba ili stanara.", 12, "#52677A"),
-                advancedGrid,
-                Row(sort))
+                Text("'Samo broj soba' koristi polje Broj soba. '&' trazi oba uslova, a '|' prihvata bilo koji uslov.", 12, "#52677A"),
+                advancedGrid)
         };
         filter.Child = Stack(
             Heading("Pronadji zgradu", 22),
@@ -324,7 +324,7 @@ public partial class MainWindow : Window
         void Refresh()
         {
             results.Children.Clear();
-            var buildings = BuildSearch(quickSearch.Text, field.SelectedIndex, query.Text, room.Text, tenants.Text, sort.IsChecked == true);
+            var buildings = BuildSearch(quickSearch.Text, field.SelectedIndex, query.Text, room.Text, tenants.Text, sort.SelectedIndex);
             if (buildings.Count == 0)
             {
                 results.Children.Add(Empty("Nema zgrada za izabrane filtere."));
@@ -339,8 +339,7 @@ public partial class MainWindow : Window
 
         apply.Click += (_, _) => Refresh();
         quickSearch.TextChanged += (_, _) => Refresh();
-        sort.Checked += (_, _) => Refresh();
-        sort.Unchecked += (_, _) => Refresh();
+        sort.SelectionChanged += (_, _) => Refresh();
         field.SelectionChanged += (_, _) =>
         {
             query.IsEnabled = field.SelectedIndex is 1 or 2 or 3;
@@ -352,10 +351,10 @@ public partial class MainWindow : Window
         SetContent(panel);
     }
 
-    private List<Building> BuildSearch(string quickSearch, int fieldIndex, string query, string roomText, string tenantText, bool sort)
+    private List<Building> BuildSearch(string quickSearch, int fieldIndex, string query, string roomText, string tenantText, int sortIndex)
     {
         var quickFiltered = _services.SharedBuildings
-            .GetApprovedBuildings(sort)
+            .GetApprovedBuildings(sortIndex == 1)
             .Where(building => MatchesQuickSearch(building, quickSearch))
             .ToList();
 
@@ -366,7 +365,7 @@ public partial class MainWindow : Window
 
         if (!hasAdvancedQuery)
         {
-            return quickFiltered;
+            return ApplyBuildingSort(quickFiltered, sortIndex);
         }
 
         BuildingSearchCriteria criteria;
@@ -414,7 +413,17 @@ public partial class MainWindow : Window
         var buildings = _services.SharedBuildings.SearchApprovedBuildings(criteria);
         var quickCodes = quickFiltered.Select(building => building.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var filtered = buildings.Where(building => quickCodes.Contains(building.Code)).ToList();
-        return sort ? filtered.OrderBy(building => building.FloorCount).ToList() : filtered;
+        return ApplyBuildingSort(filtered, sortIndex);
+    }
+
+    private static List<Building> ApplyBuildingSort(IEnumerable<Building> buildings, int sortIndex)
+    {
+        return sortIndex switch
+        {
+            1 => buildings.OrderBy(building => building.FloorCount).ToList(),
+            2 => buildings.OrderByDescending(building => building.FloorCount).ToList(),
+            _ => buildings.ToList()
+        };
     }
 
     private static bool MatchesQuickSearch(Building building, string quickSearch)
@@ -428,10 +437,36 @@ public partial class MainWindow : Window
         return value.Contains(quickSearch.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool MatchesManager(BuildingManager manager, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        var value = $"{manager.Jmbg} {manager.Email} {manager.FirstName} {manager.LastName} {manager.MobilePhone}";
+        return value.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesAdminBuilding(Building building, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        var manager = _services.Users.GetAll()
+            .OfType<BuildingManager>()
+            .FirstOrDefault(item => EqualsIgnoreCase(item.Jmbg, building.ManagerJmbg));
+        var managerText = manager is null ? building.ManagerJmbg : $"{manager.FirstName} {manager.LastName} {manager.Email} {manager.Jmbg}";
+        var value = $"{building.Code} {building.Address.Street} {building.Address.Number} {building.Neighborhood} {building.Location.City} {building.Location.Country} {managerText}";
+        return value.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private Border BuildingCard(Building building)
     {
         var card = Card();
-        card.Width = 246;
+        card.Width = 286;
         card.MinHeight = 172;
         card.Child = Stack(
             new Border
@@ -464,8 +499,9 @@ public partial class MainWindow : Window
             "Pending zahtevi mogu da se povuku.",
             "Rejected zahtevi prikazuju razlog odbijanja.");
         var filter = Combo("Svi", "Na cekanju", "Odobreni", "Odbijeni");
-        panel.Children.Add(Stack(Row(Text("Status", 13, "#64748B"), filter)));
-        var list = new StackPanel();
+        filter.Width = 220;
+        panel.Children.Add(CardWithContent(Field("Status", filter)));
+        var list = Wrap();
         panel.Children.Add(list);
 
         void Refresh()
@@ -595,9 +631,14 @@ public partial class MainWindow : Window
         }, state);
 
         AddAll(form,
+            CompactRow(
+                Badge("1. Provera stana", "#DBEAFE", "#1D4ED8"),
+                Badge("2. Potvrda", "#DCFCE7", "#166534"),
+                Badge("3. Promena broja", "#FEF3C7", "#92400E"),
+                Badge("4. Odustani", "#F1F5F9", "#334155")),
             FormGrid(Field("Sifra zgrade", buildingCode), Field("Broj stana", apartmentNumber)),
             state,
-            Row(check, create, change, cancel));
+            CompactRow(check, create, change, cancel));
         card.Child = form;
         panel.Children.Add(card);
         SetContent(panel);
@@ -617,10 +658,11 @@ public partial class MainWindow : Window
             "Samo odobrene zgrade postaju vidljive stanarima.",
             "Odbijena zgrada ostaje oznacena razlogom ako ga unesete.");
         var filter = Combo("Na cekanju", "Prihvacene");
-        panel.Children.Add(filter);
+        filter.Width = 240;
+        panel.Children.Add(CardWithContent(Field("Status zgrada", filter)));
         var actionMessage = Message();
         panel.Children.Add(actionMessage);
-        var list = new StackPanel();
+        var list = Wrap();
         panel.Children.Add(list);
 
         void Refresh()
@@ -661,7 +703,7 @@ public partial class MainWindow : Window
                             }, actionMessage);
                         }
                     };
-                    AddAll((StackPanel)card.Child, reason, Row(approve, reject));
+                    AddAll((StackPanel)card.Child, reason, CompactRow(approve, reject));
                 }
                 list.Children.Add(card);
             }
@@ -690,7 +732,7 @@ public partial class MainWindow : Window
         var buildingCombo = Combo(buildings.Select(BuildingLabel).ToArray());
         var status = Combo("Na cekanju", "Odobreni");
         var actionMessage = Message();
-        var list = new StackPanel();
+        var list = Wrap();
         panel.Children.Add(CardWithContent(
             Heading("Izbor zgrade i statusa", 18),
             FormGrid(Field("Zgrada", buildingCombo), Field("Status zahteva", status))));
@@ -750,7 +792,7 @@ public partial class MainWindow : Window
                             }, actionMessage);
                         }
                     };
-                    AddAll((StackPanel)card.Child, reason, Row(approve, reject));
+                    AddAll((StackPanel)card.Child, reason, CompactRow(approve, reject));
                 }
                 list.Children.Add(card);
             }
@@ -829,15 +871,121 @@ public partial class MainWindow : Window
                 Field("Broj soba", rooms),
                 Field("Max broj stanara", maxTenants)),
             _message,
-            Row(save, clearForm, cancel));
+            CompactRow(save, clearForm, cancel));
         card.Child = form;
         panel.Children.Add(card);
         SetContent(panel);
     }
 
+    private void ShowAdminManagers()
+    {
+        SetActiveNav("Upravnici");
+        var panel = Page(
+            "Upravnici",
+            "Pregledajte, pretrazite i odrzavajte naloge upravnika.",
+            "Brisanje nije dozvoljeno ako upravnik ima dodeljene zgrade.",
+            "JMBG se ne menja prilikom izmene naloga.");
+
+        var search = Input("Ime, prezime, email ili JMBG");
+        search.MaxWidth = 420;
+        var add = Button("Dodaj upravnika", "PrimaryButton");
+        var actionMessage = Message();
+        var formHost = new ContentControl();
+        var list = Wrap();
+        panel.Children.Add(CardWithContent(
+            Heading("Pretraga i akcije", 16),
+            CompactRow(Field("Pretraga", search), add)));
+        panel.Children.Add(actionMessage);
+        panel.Children.Add(formHost);
+        panel.Children.Add(list);
+
+        void Refresh()
+        {
+            list.Children.Clear();
+            var managers = _services.Users.GetAll()
+                .OfType<BuildingManager>()
+                .Where(manager => MatchesManager(manager, search.Text))
+                .OrderBy(manager => manager.LastName)
+                .ThenBy(manager => manager.FirstName)
+                .ToList();
+
+            if (managers.Count == 0)
+            {
+                list.Children.Add(Empty("Nema upravnika za izabranu pretragu."));
+                return;
+            }
+
+            foreach (var manager in managers)
+            {
+                list.Children.Add(AdminManagerCard(manager, formHost, actionMessage, Refresh));
+            }
+        }
+
+        add.Click += (_, _) => formHost.Content = ManagerEditor(null, actionMessage, () =>
+        {
+            formHost.Content = null;
+            Refresh();
+        });
+        search.TextChanged += (_, _) => Refresh();
+        Refresh();
+        SetContent(panel);
+    }
+
+    private void ShowAdminBuildings()
+    {
+        SetActiveNav("Zgrade CRUD");
+        var panel = Page(
+            "Zgrade CRUD",
+            "Administratorski pregled svih zgrada sa dodavanjem, izmenom i brisanjem.",
+            "Edit ne menja sifru zgrade.",
+            "Delete brise i povezane stanove, zahteve i clanstva.");
+
+        var search = Input("Sifra, ulica, naselje, grad ili upravnik");
+        search.MaxWidth = 460;
+        var add = Button("Dodaj zgradu", "PrimaryButton");
+        var actionMessage = Message();
+        var formHost = new ContentControl();
+        var list = Wrap();
+        panel.Children.Add(CardWithContent(
+            Heading("Pretraga i akcije", 16),
+            CompactRow(Field("Pretraga", search), add)));
+        panel.Children.Add(actionMessage);
+        panel.Children.Add(formHost);
+        panel.Children.Add(list);
+
+        void Refresh()
+        {
+            list.Children.Clear();
+            var buildings = _services.Buildings.GetAll()
+                .Where(building => MatchesAdminBuilding(building, search.Text))
+                .OrderBy(building => building.Code)
+                .ToList();
+
+            if (buildings.Count == 0)
+            {
+                list.Children.Add(Empty("Nema zgrada za izabranu pretragu."));
+                return;
+            }
+
+            foreach (var building in buildings)
+            {
+                list.Children.Add(AdminBuildingCard(building, formHost, actionMessage, Refresh));
+            }
+        }
+
+        add.Click += (_, _) => formHost.Content = BuildingEditor(null, actionMessage, () =>
+        {
+            formHost.Content = null;
+            Refresh();
+        });
+        search.TextChanged += (_, _) => Refresh();
+        Refresh();
+        SetContent(panel);
+    }
+
     private void ShowAdminAddManager()
     {
-        SetActiveNav("Dodaj upravnika");
+        SetActiveNav("Upravnici");
         var panel = Page(
             "Dodavanje upravnika",
             "Kreirajte nalog upravnika koji kasnije moze da odobrava zgrade i zahteve.",
@@ -898,7 +1046,7 @@ public partial class MainWindow : Window
                 Field("Prezime", last),
                 Field("Mobilni telefon", phone)),
             _message,
-            Row(save, clearForm, cancel));
+            CompactRow(save, clearForm, cancel));
         card.Child = form;
         panel.Children.Add(card);
         SetContent(panel);
@@ -906,7 +1054,7 @@ public partial class MainWindow : Window
 
     private void ShowAdminAddBuilding()
     {
-        SetActiveNav("Dodaj zgradu");
+        SetActiveNav("Zgrade CRUD");
         var panel = Page(
             "Dodavanje zgrade",
             "Unesite podatke zgrade i dodelite je postojecem upravniku.",
@@ -984,21 +1132,291 @@ public partial class MainWindow : Window
                 Field("Broj spratova", floors),
                 Field("Postojeci upravnik", managerCombo)),
             _message,
-            Row(save, clearForm, cancel));
+            CompactRow(save, clearForm, cancel));
         card.Child = form;
         panel.Children.Add(card);
         SetContent(panel);
     }
 
+    private Border AdminManagerCard(BuildingManager manager, ContentControl formHost, TextBlock message, Action refresh)
+    {
+        var card = Card();
+        card.Width = 330;
+        card.MinHeight = 210;
+        var edit = Button("Edit", "SecondaryButton");
+        edit.Click += (_, _) => formHost.Content = ManagerEditor(manager, message, () =>
+        {
+            formHost.Content = null;
+            refresh();
+        });
+        var delete = Button("Delete", "DangerButton");
+        delete.Click += (_, _) =>
+        {
+            var assignedBuildings = _services.Buildings.GetAll()
+                .Count(building => EqualsIgnoreCase(building.ManagerJmbg, manager.Jmbg));
+            if (assignedBuildings > 0)
+            {
+                SetInlineMessage(message, "Upravnik ima dodeljene zgrade i ne moze biti obrisan.", true);
+                return;
+            }
+
+            if (!Confirm($"Obrisati upravnika {manager.FirstName} {manager.LastName}?"))
+            {
+                return;
+            }
+
+            var users = _services.Users.GetAll();
+            users.RemoveAll(user => user is BuildingManager && EqualsIgnoreCase(user.Jmbg, manager.Jmbg));
+            _services.Users.SaveAll(users);
+            SetInlineMessage(message, "Upravnik je obrisan.");
+            formHost.Content = null;
+            refresh();
+        };
+
+        card.Child = Stack(
+            Row(Heading($"{manager.FirstName} {manager.LastName}", 18), Badge("Upravnik", "#DBEAFE", "#1D4ED8")),
+            Text(manager.Email, 13, "#38546D"),
+            Text($"JMBG: {manager.Jmbg}", 12, "#64748B"),
+            Text($"Telefon: {manager.MobilePhone}", 12, "#64748B"),
+            CompactRow(edit, delete));
+        return card;
+    }
+
+    private Border ManagerEditor(BuildingManager? existing, TextBlock message, Action completed)
+    {
+        var isEdit = existing is not null;
+        var card = FormCard();
+        var form = new StackPanel();
+        var jmbg = Input("JMBG");
+        var email = Input("Email");
+        var password = Password(isEdit ? "Prazno zadrzava staru lozinku" : "Lozinka");
+        var first = Input("Ime");
+        var last = Input("Prezime");
+        var phone = Input("Mobilni telefon");
+        jmbg.Text = existing?.Jmbg ?? "";
+        email.Text = existing?.Email ?? "";
+        first.Text = existing?.FirstName ?? "";
+        last.Text = existing?.LastName ?? "";
+        phone.Text = existing?.MobilePhone ?? "";
+        jmbg.IsEnabled = !isEdit;
+
+        var save = Button(isEdit ? "Sacuvaj izmene" : "Dodaj upravnika", "PrimaryButton");
+        var cancel = Button("Odustani", "SecondaryButton");
+        save.Click += (_, _) =>
+        {
+            SetInlineMessage(message, "");
+            if (!RequireFormFields(message, ("JMBG", jmbg), ("Email", email), ("Ime", first), ("Prezime", last), ("Mobilni telefon", phone)) ||
+                (!isEdit && !RequirePassword(message, "Lozinka", password)))
+            {
+                return;
+            }
+
+            if (!EnsureUniqueUserFields(message, jmbg.Text.Trim(), email.Text.Trim(), existing?.Jmbg))
+            {
+                return;
+            }
+
+            Try(() =>
+            {
+                if (isEdit)
+                {
+                    var users = _services.Users.GetAll();
+                    var manager = users.OfType<BuildingManager>().First(item => EqualsIgnoreCase(item.Jmbg, existing!.Jmbg));
+                    manager.Email = email.Text.Trim();
+                    if (!string.IsNullOrWhiteSpace(password.Password))
+                    {
+                        manager.Password = password.Password;
+                    }
+                    manager.FirstName = first.Text.Trim();
+                    manager.LastName = last.Text.Trim();
+                    manager.MobilePhone = phone.Text.Trim();
+                    _services.Users.SaveAll(users);
+                    SetInlineMessage(message, "Upravnik je izmenjen.");
+                }
+                else
+                {
+                    _services.Admins.RegisterManager(new BuildingManager
+                    {
+                        Jmbg = jmbg.Text.Trim(),
+                        Email = email.Text.Trim(),
+                        Password = password.Password,
+                        FirstName = first.Text.Trim(),
+                        LastName = last.Text.Trim(),
+                        MobilePhone = phone.Text.Trim()
+                    });
+                    SetInlineMessage(message, "Upravnik je dodat.");
+                }
+
+                completed();
+            }, message);
+        };
+        cancel.Click += (_, _) => completed();
+        AddAll(form,
+            Heading(isEdit ? "Izmena upravnika" : "Novi upravnik", 18),
+            FormGrid(
+                Field("JMBG", jmbg),
+                Field("Email", email),
+                Field("Lozinka", password),
+                Field("Ime", first),
+                Field("Prezime", last),
+                Field("Mobilni telefon", phone)),
+            CompactRow(save, cancel));
+        card.Child = form;
+        return card;
+    }
+
+    private Border AdminBuildingCard(Building building, ContentControl formHost, TextBlock message, Action refresh)
+    {
+        var card = BuildingCard(building);
+        card.Width = 310;
+        ((StackPanel)card.Child).Children.Add(StatusBadge(building.Status));
+        var edit = Button("Edit", "SecondaryButton");
+        edit.Click += (_, _) => formHost.Content = BuildingEditor(building, message, () =>
+        {
+            formHost.Content = null;
+            refresh();
+        });
+        var delete = Button("Delete", "DangerButton");
+        delete.Click += (_, _) =>
+        {
+            if (!Confirm($"Obrisati zgradu {building.Code}?"))
+            {
+                return;
+            }
+
+            DeleteBuildingCascade(building.Code);
+            SetInlineMessage(message, "Zgrada je obrisana.");
+            formHost.Content = null;
+            refresh();
+        };
+        ((StackPanel)card.Child).Children.Add(CompactRow(edit, delete));
+        return card;
+    }
+
+    private Border BuildingEditor(Building? existing, TextBlock message, Action completed)
+    {
+        var isEdit = existing is not null;
+        var card = FormCard();
+        var form = new StackPanel();
+        var code = Input("Sifra zgrade");
+        var street = Input("Ulica");
+        var number = Input("Broj");
+        var neighborhood = Input("Naselje");
+        var city = Input("Grad");
+        var country = Input("Drzava");
+        var floors = Input("Broj spratova");
+        var managers = _services.Users.GetAll().OfType<BuildingManager>().ToList();
+        var managerCombo = Combo(managers.Select(ManagerLabel).ToArray());
+        code.Text = existing?.Code ?? "";
+        street.Text = existing?.Address.Street ?? "";
+        number.Text = existing?.Address.Number ?? "";
+        neighborhood.Text = existing?.Neighborhood ?? "";
+        city.Text = existing?.Location.City ?? "";
+        country.Text = existing?.Location.Country ?? "";
+        floors.Text = existing?.FloorCount.ToString() ?? "";
+        code.IsEnabled = !isEdit;
+        if (existing is not null)
+        {
+            managerCombo.SelectedIndex = Math.Max(0, managers.FindIndex(manager => EqualsIgnoreCase(manager.Jmbg, existing.ManagerJmbg)));
+        }
+
+        var save = Button(isEdit ? "Sacuvaj izmene" : "Dodaj zgradu", "PrimaryButton");
+        var cancel = Button("Odustani", "SecondaryButton");
+        save.IsEnabled = managers.Count > 0;
+        save.Click += (_, _) =>
+        {
+            SetInlineMessage(message, "");
+            if (!RequireFormFields(message, ("Sifra zgrade", code), ("Ulica", street), ("Broj", number), ("Naselje", neighborhood), ("Grad", city), ("Drzava", country)) ||
+                !TryReadPositiveInt(message, "Broj spratova", floors, out var floorCount))
+            {
+                return;
+            }
+
+            if (managerCombo.SelectedIndex < 0)
+            {
+                SetInlineMessage(message, "Izaberite postojeceg upravnika.", true);
+                return;
+            }
+
+            Try(() =>
+            {
+                var selectedManager = managers[managerCombo.SelectedIndex];
+                if (isEdit)
+                {
+                    var buildings = _services.Buildings.GetAll();
+                    var building = buildings.First(item => EqualsIgnoreCase(item.Code, existing!.Code));
+                    building.Address = new Address { Street = street.Text.Trim(), Number = number.Text.Trim() };
+                    building.Neighborhood = neighborhood.Text.Trim();
+                    building.Location = new Location { City = city.Text.Trim(), Country = country.Text.Trim() };
+                    building.FloorCount = floorCount;
+                    building.ManagerJmbg = selectedManager.Jmbg;
+                    _services.Buildings.SaveAll(buildings);
+                    SetInlineMessage(message, "Zgrada je izmenjena.");
+                }
+                else
+                {
+                    _services.Admins.CreateBuilding(new Building
+                    {
+                        Code = code.Text.Trim(),
+                        Address = new Address { Street = street.Text.Trim(), Number = number.Text.Trim() },
+                        Neighborhood = neighborhood.Text.Trim(),
+                        Location = new Location { City = city.Text.Trim(), Country = country.Text.Trim() },
+                        FloorCount = floorCount,
+                        ManagerJmbg = selectedManager.Jmbg
+                    });
+                    SetInlineMessage(message, "Zgrada je dodata i ceka odobrenje upravnika.");
+                }
+
+                completed();
+            }, message);
+        };
+        cancel.Click += (_, _) => completed();
+        AddAll(form,
+            Heading(isEdit ? "Izmena zgrade" : "Nova zgrada", 18),
+            FormGrid(
+                Field("Sifra zgrade", code),
+                Field("Ulica", street),
+                Field("Broj", number),
+                Field("Naselje", neighborhood),
+                Field("Grad", city),
+                Field("Drzava", country),
+                Field("Broj spratova", floors),
+                Field("Postojeci upravnik", managerCombo)),
+            CompactRow(save, cancel));
+        card.Child = form;
+        return card;
+    }
+
     private Border RequestCard(AccessRequest request)
     {
         var card = Card();
+        card.Width = 380;
+        card.MinHeight = 190;
+        var header = new Grid();
+        header.ColumnDefinitions.Add(new ColumnDefinition());
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.Children.Add(Heading(request.Id, 18));
+        var status = StatusBadge(request.Status);
+        Grid.SetColumn(status, 1);
+        header.Children.Add(status);
+        UIElement reason = string.IsNullOrWhiteSpace(request.RejectionReason)
+            ? new TextBlock()
+            : new Border
+            {
+                Background = Brush("#FEF2F2"),
+                BorderBrush = Brush("#FECACA"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(10),
+                Margin = new Thickness(0, 6, 0, 0),
+                Child = Text($"Razlog odbijanja: {request.RejectionReason}", 12, "#991B1B")
+            };
         card.Child = Stack(
-            Row(Heading(request.Id, 18), StatusBadge(request.Status)),
+            header,
             Text($"Zgrada {request.BuildingCode}, stan {request.ApartmentNumber}", 15, "#111827"),
             Text($"Stanar JMBG: {request.TenantJmbg}", 13, "#64748B"),
             Text($"Kreiran: {request.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}", 13, "#64748B"),
-            string.IsNullOrWhiteSpace(request.RejectionReason) ? new TextBlock() : Text($"Razlog: {request.RejectionReason}", 13, "#991B1B"));
+            reason);
         return card;
     }
 
@@ -1059,7 +1477,12 @@ public partial class MainWindow : Window
     {
         if (_content is not null)
         {
-            _content.Content = new ScrollViewer { Content = element, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            _content.Content = new ScrollViewer
+            {
+                Content = element,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            };
         }
     }
 
@@ -1150,8 +1573,8 @@ public partial class MainWindow : Window
     private static Border HeaderPanel(string title, string helper, params string[] tips)
     {
         var content = Stack(
-            Heading(title, 32),
-            Text(helper, 15, "#38546D"));
+            Heading(title, 28),
+            Text(helper, 14, "#38546D"));
 
         if (tips.Length > 0)
         {
@@ -1169,8 +1592,8 @@ public partial class MainWindow : Window
             BorderBrush = Brush("#D7E5EA"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(20),
-            Margin = new Thickness(0, 0, 0, 18),
+            Padding = new Thickness(16),
+            Margin = new Thickness(0, 0, 0, 14),
             Child = content
         };
     }
@@ -1213,10 +1636,9 @@ public partial class MainWindow : Window
     private static Border FormCard()
     {
         var card = Card();
-        card.MaxWidth = 960;
-        card.MinWidth = 760;
+        card.MaxWidth = 920;
         card.HorizontalAlignment = HorizontalAlignment.Left;
-        card.Padding = new Thickness(26);
+        card.Padding = new Thickness(20);
         return card;
     }
 
@@ -1229,8 +1651,8 @@ public partial class MainWindow : Window
             action();
         };
         var card = Card();
-        card.Width = 292;
-        card.MinHeight = 198;
+        card.Width = 300;
+        card.MinHeight = 190;
         card.Cursor = System.Windows.Input.Cursors.Hand;
         card.MouseLeftButtonUp += (_, _) => action();
         card.Child = Stack(
@@ -1431,9 +1853,30 @@ public partial class MainWindow : Window
         return row;
     }
 
+    private static WrapPanel CompactRow(params UIElement[] elements)
+    {
+        var row = new WrapPanel
+        {
+            Margin = new Thickness(0, 4, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        AddAll(row, elements);
+        return row;
+    }
+
     private static WrapPanel Wrap()
     {
         return new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
+    }
+
+    private static UniformGrid DashboardGrid()
+    {
+        return new UniformGrid
+        {
+            Columns = 3,
+            Margin = new Thickness(0, 12, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
     }
 
     private static void AddAll(Panel panel, params UIElement[] elements)
@@ -1496,6 +1939,49 @@ public partial class MainWindow : Window
         return false;
     }
 
+    private bool EnsureUniqueUserFields(TextBlock message, string jmbg, string email, string? existingJmbg)
+    {
+        var users = _services.Users.GetAll();
+        var duplicateJmbg = users.Any(user =>
+            !EqualsIgnoreCase(user.Jmbg, existingJmbg ?? string.Empty) &&
+            EqualsIgnoreCase(user.Jmbg, jmbg));
+        if (duplicateJmbg)
+        {
+            SetInlineMessage(message, "Korisnik sa unetim JMBG vec postoji.", true);
+            return false;
+        }
+
+        var duplicateEmail = users.Any(user =>
+            !EqualsIgnoreCase(user.Jmbg, existingJmbg ?? string.Empty) &&
+            EqualsIgnoreCase(user.Email, email));
+        if (duplicateEmail)
+        {
+            SetInlineMessage(message, "Korisnik sa unetim email-om vec postoji.", true);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void DeleteBuildingCascade(string buildingCode)
+    {
+        var buildings = _services.Buildings.GetAll();
+        buildings.RemoveAll(building => EqualsIgnoreCase(building.Code, buildingCode));
+        _services.Buildings.SaveAll(buildings);
+
+        var apartments = _services.Apartments.GetAll();
+        apartments.RemoveAll(apartment => EqualsIgnoreCase(apartment.BuildingCode, buildingCode));
+        _services.Apartments.SaveAll(apartments);
+
+        var requests = _services.AccessRequests.GetAll();
+        requests.RemoveAll(request => EqualsIgnoreCase(request.BuildingCode, buildingCode));
+        _services.AccessRequests.SaveAll(requests);
+
+        var memberships = _services.ApartmentMemberships.GetAll();
+        memberships.RemoveAll(membership => EqualsIgnoreCase(membership.BuildingCode, buildingCode));
+        _services.ApartmentMemberships.SaveAll(memberships);
+    }
+
     private static int ToInt(string text)
     {
         return int.TryParse(text, out var value) ? value : 0;
@@ -1520,6 +2006,11 @@ public partial class MainWindow : Window
     private static string ManagerLabel(BuildingManager manager)
     {
         return $"{manager.FirstName} {manager.LastName} ({manager.Jmbg})";
+    }
+
+    private static bool EqualsIgnoreCase(string? left, string? right)
+    {
+        return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
     }
 
     private static SolidColorBrush Brush(string color)
