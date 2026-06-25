@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIMSProject", "SIMSProject.csproj", "{21712E38-9936-411C-88F0-4AA9131AF01D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIMSProject.Wpf", "SIMSProject.Wpf\SIMSProject.Wpf.csproj", "{1A504595-FE28-4FF7-ACC0-F69A2199B1FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{21712E38-9936-411C-88F0-4AA9131AF01D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21712E38-9936-411C-88F0-4AA9131AF01D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21712E38-9936-411C-88F0-4AA9131AF01D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21712E38-9936-411C-88F0-4AA9131AF01D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A504595-FE28-4FF7-ACC0-F69A2199B1FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A504595-FE28-4FF7-ACC0-F69A2199B1FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A504595-FE28-4FF7-ACC0-F69A2199B1FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A504595-FE28-4FF7-ACC0-F69A2199B1FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

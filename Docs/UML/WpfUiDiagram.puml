@@ -1,0 +1,54 @@
+@startuml
+skinparam packageStyle rectangle
+hide empty members
+
+package "WPF UI" {
+  class App
+  class MainWindow {
+    +MainWindow()
+  }
+
+  class AppServices {
+    +ProjectRoot: string
+    +Users: IUserRepository
+    +Buildings: IBuildingRepository
+    +Apartments: IApartmentRepository
+    +AccessRequests: IAccessRequestRepository
+    +ApartmentMemberships: IApartmentMembershipRepository
+    +Auth: IAuthService
+    +SharedBuildings: ISharedBuildingService
+    +Tenants: ITenantService
+    +Managers: IManagerService
+    +Admins: IAdminService
+  }
+}
+
+package "ServiceInterfaces" {
+  interface IAuthService
+  interface ISharedBuildingService
+  interface ITenantService
+  interface IManagerService
+  interface IAdminService
+}
+
+package "RepositoryInterfaces" {
+  interface IUserRepository
+  interface IBuildingRepository
+  interface IApartmentRepository
+  interface IAccessRequestRepository
+  interface IApartmentMembershipRepository
+}
+
+App --> MainWindow
+MainWindow --> AppServices
+AppServices --> IAuthService
+AppServices --> ISharedBuildingService
+AppServices --> ITenantService
+AppServices --> IManagerService
+AppServices --> IAdminService
+AppServices --> IUserRepository
+AppServices --> IBuildingRepository
+AppServices --> IApartmentRepository
+AppServices --> IAccessRequestRepository
+AppServices --> IApartmentMembershipRepository
+@enduml

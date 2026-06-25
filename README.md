@@ -2,7 +2,7 @@
 
 GitHub repozitorijum: https://github.com/Jaddes/SIMS-projekat
 
-Konzolna C# aplikacija za upravljanje zgradama, stanovima, korisnicima i zahtevima stanara za pristup zgradi/stanu. Projekat je uradjen prema specifikaciji "Specifikacija projekta za nize ocene - 2026".
+C# aplikacija za upravljanje zgradama, stanovima, korisnicima i zahtevima stanara za pristup zgradi/stanu. Projekat sadrzi konzolni interfejs i dodatni WPF interfejs. Oba interfejsa koriste iste Service/Repository klase i iste JSON podatke.
 
 ## Pokretanje
 
@@ -13,10 +13,17 @@ cd D:\SIMS\Projekat\SIMSProject
 dotnet run --project SIMSProject.csproj
 ```
 
+WPF interfejs:
+
+```powershell
+cd D:\SIMS\Projekat\SIMSProject
+dotnet run --project SIMSProject.Wpf\SIMSProject.Wpf.csproj
+```
+
 Build provera:
 
 ```powershell
-dotnet build SIMSProject.csproj --no-restore
+dotnet build SIMSProject.sln --no-restore
 ```
 
 ## Test nalozi
@@ -44,6 +51,8 @@ Svi entiteti se cuvaju u zasebnim JSON datotekama:
 | Clanstva stanara u stanovima | `Storage/apartmentMemberships.json` |
 
 ## Funkcionalnosti
+
+Sve navedene funkcionalnosti su dostupne kroz WPF GUI, bez potrebe za konzolom. Konzolni interfejs je ostavljen radi kompatibilnosti i koristi istu poslovnu logiku.
 
 Zajednicko za sve korisnike:
 - Prijava preko iste forme za administratora, upravnika i stanara.
@@ -79,8 +88,10 @@ Administrator:
 UML dijagrami su u `Docs/UML`:
 - `UseCaseDiagram.puml`
 - `ClassDiagram.puml`
+- `WpfUiDiagram.puml`
 
 Klasni dijagram prikazuje Model, Service i Repository sloj i uskladjen je sa javnim klasama, interfejsima, metodama, svojstvima, enum vrednostima i zavisnostima u kodu.
+WPF UI dijagram prikazuje GUI sloj i njegove zavisnosti prema postojecim service interfejsima.
 
 ## Checklist zahteva
 
@@ -106,3 +117,5 @@ Klasni dijagram prikazuje Model, Service i Repository sloj i uskladjen je sa jav
 - [x] Prikaz zgrada nudi sortiranje po broju spratova.
 - [x] Pretraga zgrada podrzava adresu, naselje, broj spratova i stanove.
 - [x] Pretraga stanova podrzava broj soba, max broj stanara i kombinacije sa `&` i `|`.
+- [x] WPF GUI omogucava kompletan tok rada bez koriscenja konzole.
+- [x] Konzolni interfejs je sacuvan.
