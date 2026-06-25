@@ -259,19 +259,20 @@ public partial class MainWindow : Window
         var panel = Page(
             "Zgrade",
             "Pretrazite odobrene zgrade kao katalog. JMBG upravnika se ne prikazuje.",
-            "Unesite ulicu, naselje, grad ili sifru zgrade.",
-            "Filter zgrade i filter stanova su odvojeni da unos bude jasan.",
-            "Sortiranje nudi rastuci i opadajuci redosled.");
+            "Izaberite parametar pretrage iz specifikacije.",
+            "Za stanove se dodatno bira broj soba, broj stanara ili AND/OR kombinacija.",
+            "Sortiranje po spratovima nudi rastuci i opadajuci redosled.");
         var filter = Card();
         filter.Padding = new Thickness(18);
 
-        var quickSearch = Input("npr. Liman, Bulevar, Grbavica");
-        _searchBox = quickSearch;
-        quickSearch.MinHeight = 42;
-        quickSearch.FontSize = 14;
-        var buildingFilter = Combo("Bez filtera zgrade", "Adresa", "Naselje", "Broj spratova");
-        var buildingValue = Input("Unesite adresu, naselje ili broj spratova");
-        var apartmentFilter = Combo("Bez filtera stanova", "Broj soba", "Broj stanara", "Sobe & stanari", "Sobe | stanari");
+        var parameter = Combo("Adresa", "Naselje", "Broj spratova", "Stanovi");
+        var value = Input("Ulica ili deo adrese");
+        _searchBox = value;
+        value.MinHeight = 42;
+        value.FontSize = 14;
+        var apartmentMode = Combo("Broj soba", "Broj stanara", "Broj soba + Broj stanara");
+        var andOperator = new RadioButton { Content = "AND (&)", GroupName = "ApartmentOperator", IsChecked = true, Margin = new Thickness(0, 8, 16, 8) };
+        var orOperator = new RadioButton { Content = "OR (|)", GroupName = "ApartmentOperator", Margin = new Thickness(0, 8, 16, 8) };
         var room = Input("Broj soba");
         var tenants = Input("Broj stanara");
         var sort = Combo("Bez sortiranja", "Spratovi rastuce", "Spratovi opadajuce");
@@ -283,40 +284,33 @@ public partial class MainWindow : Window
         apply.VerticalAlignment = VerticalAlignment.Bottom;
         apply.Margin = new Thickness(12, 0, 0, 8);
 
-        var searchRow = new Grid { Margin = new Thickness(0, 8, 0, 14) };
-        searchRow.ColumnDefinitions.Add(new ColumnDefinition());
-        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var quickField = Field("Brza pretraga", quickSearch);
-        Grid.SetColumn(quickField, 0);
-        searchRow.Children.Add(quickField);
-        Grid.SetColumn(apply, 1);
-        searchRow.Children.Add(apply);
+        var mainFilters = new WrapPanel();
+        var parameterField = SizedField("Parametar pretrage", parameter, 210);
+        var valueField = SizedField("Vrednost", value, 360);
+        var sortField = SizedField("Sortiranje", sort, 210);
+        AddAll(mainFilters, parameterField, valueField, sortField, apply);
 
-        var buildingFilterField = SizedField("Filter zgrade", buildingFilter, 190);
-        var buildingValueField = SizedField("Vrednost za zgradu", buildingValue, 230);
-        var apartmentFilterField = SizedField("Filter stanova", apartmentFilter, 190);
-        var roomField = SizedField("Broj soba", room, 140);
-        var tenantField = SizedField("Broj stanara", tenants, 150);
-        var sortField = SizedField("Sortiranje", sort, 190);
-        var advancedGrid = new WrapPanel();
-        AddAll(advancedGrid, buildingFilterField, buildingValueField, apartmentFilterField, roomField, tenantField, sortField);
-        var advancedPanel = new Border
+        var apartmentPanel = new Border
         {
             Background = Brush("#F8FBFC"),
             BorderBrush = Brush("#D7E5EA"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),
             Padding = new Thickness(12),
-            Child = Stack(
-                Heading("Napredni filteri", 16),
-                Text("Filter zgrade koristi polje 'Vrednost za zgradu'. Filter stanova koristi 'Broj soba' i/ili 'Broj stanara'. '&' trazi oba uslova, '|' prihvata bilo koji.", 12, "#52677A"),
-                advancedGrid)
+            Margin = new Thickness(0, 10, 0, 0)
         };
+        var roomField = SizedField("Broj soba", room, 140);
+        var tenantField = SizedField("Broj stanara", tenants, 150);
+        apartmentPanel.Child = Stack(
+            Heading("Pretraga po stanovima", 16),
+            Text("Ovaj deo se koristi samo kada je parametar pretrage 'Stanovi'. Za kombinaciju izaberite AND ili OR.", 12, "#52677A"),
+            CompactRow(SizedField("Pretraga po", apartmentMode, 260), roomField, tenantField),
+            CompactRow(andOperator, orOperator));
         filter.Child = Stack(
-            Heading("Pronadji zgradu", 22),
-            Text("Brza pretraga radi po sifri, adresi, naselju, gradu i drzavi. Detalje suzite ispod.", 13, "#52677A"),
-            searchRow,
-            advancedPanel);
+            Heading("Pretraga zgrada", 22),
+            Text("Izaberite jedan parametar, unesite vrednost i pokrenite pretragu. Opcija Stanovi otvara dodatna polja.", 13, "#52677A"),
+            mainFilters,
+            apartmentPanel);
         panel.Children.Add(filter);
 
         var results = Wrap();
@@ -325,7 +319,7 @@ public partial class MainWindow : Window
         void Refresh()
         {
             results.Children.Clear();
-            var buildings = BuildSearch(quickSearch.Text, buildingFilter.SelectedIndex, buildingValue.Text, apartmentFilter.SelectedIndex, room.Text, tenants.Text, sort.SelectedIndex);
+            var buildings = BuildSearch(parameter.SelectedIndex, value.Text, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, sort.SelectedIndex);
             if (buildings.Count == 0)
             {
                 results.Children.Add(Empty("Nema zgrada za izabrane filtere."));
@@ -339,19 +333,33 @@ public partial class MainWindow : Window
         }
 
         apply.Click += (_, _) => Refresh();
-        quickSearch.TextChanged += (_, _) => Refresh();
         sort.SelectionChanged += (_, _) => Refresh();
-        buildingFilter.SelectionChanged += (_, _) =>
+        parameter.SelectionChanged += (_, _) =>
         {
-            buildingValue.IsEnabled = buildingFilter.SelectedIndex is 1 or 2 or 3;
+            var isApartment = parameter.SelectedIndex == 3;
+            value.IsEnabled = !isApartment;
+            apartmentPanel.Visibility = isApartment ? Visibility.Visible : Visibility.Collapsed;
+            value.Tag = parameter.SelectedIndex switch
+            {
+                1 => "Deo naziva naselja",
+                2 => "Broj spratova, npr. 5",
+                _ => "Ulica ili deo adrese"
+            };
+            RefreshApartmentFields();
         };
-        apartmentFilter.SelectionChanged += (_, _) =>
+        apartmentMode.SelectionChanged += (_, _) => RefreshApartmentFields();
+        void RefreshApartmentFields()
         {
-            room.IsEnabled = apartmentFilter.SelectedIndex is 1 or 3 or 4;
-            tenants.IsEnabled = apartmentFilter.SelectedIndex is 2 or 3 or 4;
-        };
-        buildingFilter.SelectedIndex = 0;
-        apartmentFilter.SelectedIndex = 0;
+            room.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex is 0 or 2;
+            tenants.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex is 1 or 2;
+            andOperator.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex == 2;
+            orOperator.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex == 2;
+        }
+
+        parameter.SelectedIndex = 0;
+        apartmentMode.SelectedIndex = 0;
+        apartmentPanel.Visibility = Visibility.Collapsed;
+        RefreshApartmentFields();
         Refresh();
         if (_currentUser is Administrator)
         {
@@ -360,60 +368,48 @@ public partial class MainWindow : Window
         SetContent(panel);
     }
 
-    private List<Building> BuildSearch(string quickSearch, int buildingFilterIndex, string buildingQuery, int apartmentFilterIndex, string roomText, string tenantText, int sortIndex)
+    private List<Building> BuildSearch(int parameterIndex, string query, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, int sortIndex)
     {
-        var quickFiltered = _services.SharedBuildings
-            .GetApprovedBuildings(sortIndex == 1)
-            .Where(building => MatchesQuickSearch(building, quickSearch))
-            .ToList();
-
-        var filtered = quickFiltered;
-        if (buildingFilterIndex > 0 && !string.IsNullOrWhiteSpace(buildingQuery))
+        if (parameterIndex == 3)
         {
-            BuildingSearchCriteria criteria = buildingFilterIndex switch
+            if (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText))
             {
-                2 => new BuildingSearchCriteria { Field = BuildingSearchField.Neighborhood, Query = buildingQuery },
-                3 => new BuildingSearchCriteria { Field = BuildingSearchField.FloorCount, Query = buildingQuery },
-                _ => new BuildingSearchCriteria { Field = BuildingSearchField.Address, Query = buildingQuery }
-            };
+                return ApplyBuildingSort(_services.SharedBuildings.GetApprovedBuildings(sortIndex == 1), sortIndex);
+            }
 
-            var buildingMatches = _services.SharedBuildings.SearchApprovedBuildings(criteria);
-            var matchCodes = buildingMatches.Select(building => building.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            filtered = filtered.Where(building => matchCodes.Contains(building.Code)).ToList();
-        }
-
-        if (apartmentFilterIndex > 0 && (!string.IsNullOrWhiteSpace(roomText) || !string.IsNullOrWhiteSpace(tenantText)))
-        {
-            ApartmentSearchCriteria apartmentCriteria = apartmentFilterIndex switch
+            ApartmentSearchCriteria apartmentCriteria = apartmentModeIndex switch
             {
-                1 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.RoomCount, RoomCount = ToInt(roomText) },
-                2 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.MaxTenantCount, MaxTenantCount = ToInt(tenantText) },
-                3 => new ApartmentSearchCriteria
-                {
-                    Mode = ApartmentSearchMode.Combined,
-                    RoomCount = ToInt(roomText),
-                    MaxTenantCount = ToInt(tenantText),
-                    Operator = LogicalOperator.And
-                },
+                0 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.RoomCount, RoomCount = ToInt(roomText) },
+                1 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.MaxTenantCount, MaxTenantCount = ToInt(tenantText) },
                 _ => new ApartmentSearchCriteria
                 {
                     Mode = ApartmentSearchMode.Combined,
                     RoomCount = ToInt(roomText),
                     MaxTenantCount = ToInt(tenantText),
-                    Operator = LogicalOperator.Or
+                    Operator = useAndOperator ? LogicalOperator.And : LogicalOperator.Or
                 }
             };
 
-            var apartmentMatches = _services.SharedBuildings.SearchApprovedBuildings(new BuildingSearchCriteria
+            return ApplyBuildingSort(_services.SharedBuildings.SearchApprovedBuildings(new BuildingSearchCriteria
             {
                 Field = BuildingSearchField.ApartmentCriteria,
                 ApartmentCriteria = apartmentCriteria
-            });
-            var apartmentCodes = apartmentMatches.Select(building => building.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            filtered = filtered.Where(building => apartmentCodes.Contains(building.Code)).ToList();
+            }), sortIndex);
         }
 
-        return ApplyBuildingSort(filtered, sortIndex);
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return ApplyBuildingSort(_services.SharedBuildings.GetApprovedBuildings(sortIndex == 1), sortIndex);
+        }
+
+        BuildingSearchCriteria criteria = parameterIndex switch
+        {
+            1 => new BuildingSearchCriteria { Field = BuildingSearchField.Neighborhood, Query = query },
+            2 => new BuildingSearchCriteria { Field = BuildingSearchField.FloorCount, Query = query },
+            _ => new BuildingSearchCriteria { Field = BuildingSearchField.Address, Query = query }
+        };
+
+        return ApplyBuildingSort(_services.SharedBuildings.SearchApprovedBuildings(criteria), sortIndex);
     }
 
     private static List<Building> ApplyBuildingSort(IEnumerable<Building> buildings, int sortIndex)
@@ -424,17 +420,6 @@ public partial class MainWindow : Window
             2 => buildings.OrderByDescending(building => building.FloorCount).ToList(),
             _ => buildings.ToList()
         };
-    }
-
-    private static bool MatchesQuickSearch(Building building, string quickSearch)
-    {
-        if (string.IsNullOrWhiteSpace(quickSearch))
-        {
-            return true;
-        }
-
-        var value = $"{building.Code} {building.Address.Street} {building.Address.Number} {building.Neighborhood} {building.Location.City} {building.Location.Country}";
-        return value.Contains(quickSearch.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool MatchesManager(BuildingManager manager, string query)
