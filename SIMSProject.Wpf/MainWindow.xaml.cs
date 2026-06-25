@@ -13,7 +13,6 @@ public partial class MainWindow : Window
     private User? _currentUser;
     private ContentControl? _content;
     private TextBlock? _message;
-    private TextBlock? _userLabel;
 
     public MainWindow()
     {
@@ -154,16 +153,24 @@ public partial class MainWindow : Window
         shell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
         shell.ColumnDefinitions.Add(new ColumnDefinition());
 
-        var top = new DockPanel { Background = Brush("#FFFFFF"), LastChildFill = false, Margin = new Thickness(0, 0, 0, 1) };
-        top.Children.Add(new Border { Width = 8, Background = Brush("#0F766E"), Margin = new Thickness(0) });
-        top.Children.Add(Heading("SIMS Buildings", 22));
-        _userLabel = Text($"{_currentUser.FirstName} {_currentUser.LastName} - {RoleName(_currentUser)}", 14, "#334155");
-        _userLabel.Margin = new Thickness(0, 12, 16, 0);
-        DockPanel.SetDock(_userLabel, Dock.Right);
-        top.Children.Add(_userLabel);
-        var logout = Button("Logout", "SecondaryButton");
+        var top = new Grid { Background = Brush("#FFFFFF"), Height = 76, Margin = new Thickness(0, 0, 0, 1) };
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+        top.ColumnDefinitions.Add(new ColumnDefinition());
+        top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        top.Children.Add(new Border { Background = Brush("#007CC2") });
+
+        var identity = Stack(
+            Heading("SIMS Buildings", 22),
+            Text($"{_currentUser.FirstName} {_currentUser.LastName} - {RoleName(_currentUser)}", 13, "#52677A"));
+        identity.Margin = new Thickness(18, 10, 0, 0);
+        Grid.SetColumn(identity, 1);
+        top.Children.Add(identity);
+
+        var logout = Button("Logout", "DangerButton");
+        logout.Margin = new Thickness(0, 12, 20, 12);
+        logout.MinWidth = 132;
         logout.Click += (_, _) => ShowLogin();
-        DockPanel.SetDock(logout, Dock.Right);
+        Grid.SetColumn(logout, 2);
         top.Children.Add(logout);
         Grid.SetColumnSpan(top, 2);
         shell.Children.Add(top);
@@ -235,30 +242,60 @@ public partial class MainWindow : Window
         var panel = Page(
             "Zgrade",
             "Pretrazite odobrene zgrade kao katalog. JMBG upravnika se ne prikazuje.",
-            "Filter je uvek dostupan na vrhu.",
-            "Za pretragu po stanovima koristite polja Broj soba i Max stanara.",
-            "Sortiranje po spratovima mozete ukljuciti jednim klikom.");
+            "Unesite ulicu, naselje, grad ili sifru zgrade.",
+            "Napredni filteri pokrivaju spratove i stanove.",
+            "Sortiranje po spratovima je dostupno jednim klikom.");
         var filter = Card();
-        var filterGrid = new UniformGrid { Columns = 5 };
+        filter.Padding = new Thickness(24);
 
         var quickSearch = Input("npr. Liman, Bulevar, Grbavica");
+        quickSearch.MinHeight = 58;
+        quickSearch.FontSize = 16;
         var field = Combo("Bez dodatnog filtera", "Adresa", "Naselje", "Broj spratova", "Broj soba", "Broj stanara", "Sobe & stanari", "Sobe | stanari");
         var query = Input("Vrednost");
         var room = Input("Broj soba");
         var tenants = Input("Broj stanara");
-        var sort = new CheckBox { Content = "Sortiraj po spratovima", Margin = new Thickness(8, 12, 8, 0) };
+        var sort = new CheckBox { Content = "Sortiraj po spratovima", Margin = new Thickness(0, 14, 18, 0), VerticalAlignment = VerticalAlignment.Center };
         var apply = Button("Primeni", "PrimaryButton");
-        AddAll(filterGrid,
-            Field("Brza pretraga", quickSearch),
+        apply.Content = "Pretrazi";
+        apply.MinWidth = 170;
+        apply.MinHeight = 58;
+        apply.VerticalAlignment = VerticalAlignment.Bottom;
+        apply.Margin = new Thickness(14, 0, 0, 10);
+
+        var searchRow = new Grid { Margin = new Thickness(0, 8, 0, 14) };
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition());
+        searchRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var quickField = Field("Brza pretraga", quickSearch);
+        Grid.SetColumn(quickField, 0);
+        searchRow.Children.Add(quickField);
+        Grid.SetColumn(apply, 1);
+        searchRow.Children.Add(apply);
+
+        var advancedGrid = new UniformGrid { Columns = 4 };
+        AddAll(advancedGrid,
             Field("Dodatni filter", field),
             Field("Vrednost", query),
             Field("Broj soba", room),
             Field("Broj stanara", tenants));
+        var advancedPanel = new Border
+        {
+            Background = Brush("#F8FBFC"),
+            BorderBrush = Brush("#D7E5EA"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(16),
+            Child = Stack(
+                Heading("Napredni filteri", 16),
+                Text("Koristite ih kada zelite tacan broj spratova, soba ili stanara.", 12, "#52677A"),
+                advancedGrid,
+                Row(sort))
+        };
         filter.Child = Stack(
-            Heading("Pretraga i filteri", 18),
-            Text("Prvo koristite brzu pretragu, a po potrebi dodajte precizan filter za spratove ili stanove.", 13, "#52677A"),
-            filterGrid,
-            Row(sort, apply));
+            Heading("Pronadji zgradu", 22),
+            Text("Brza pretraga radi po sifri, adresi, naselju, gradu i drzavi. Detalje suzite ispod.", 13, "#52677A"),
+            searchRow,
+            advancedPanel);
         panel.Children.Add(filter);
 
         var results = Wrap();
@@ -281,6 +318,9 @@ public partial class MainWindow : Window
         }
 
         apply.Click += (_, _) => Refresh();
+        quickSearch.TextChanged += (_, _) => Refresh();
+        sort.Checked += (_, _) => Refresh();
+        sort.Unchecked += (_, _) => Refresh();
         field.SelectionChanged += (_, _) =>
         {
             query.IsEnabled = field.SelectedIndex is 1 or 2 or 3;
@@ -371,14 +411,15 @@ public partial class MainWindow : Window
     private Border BuildingCard(Building building)
     {
         var card = Card();
-        card.Width = 310;
+        card.Width = 246;
+        card.MinHeight = 172;
         card.Child = Stack(
             new Border
             {
-                Background = Brush("#0F766E"),
-                Width = 42,
+                Background = Brush("#FF5A1F"),
+                Width = 48,
                 Height = 5,
-                CornerRadius = new CornerRadius(999),
+                CornerRadius = new CornerRadius(2),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 0, 0, 12)
             },
@@ -899,7 +940,7 @@ public partial class MainWindow : Window
     {
         var grid = new Grid { Margin = new Thickness(48) };
         var card = Card();
-        card.Width = 480;
+        card.Width = 520;
         card.HorizontalAlignment = HorizontalAlignment.Center;
         card.VerticalAlignment = VerticalAlignment.Center;
         card.Child = Stack(Heading(title, 28), Text(helper, 13, "#64748B"));
@@ -911,7 +952,7 @@ public partial class MainWindow : Window
     {
         var border = new Border
         {
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(28),
             Margin = new Thickness(0, 0, 0, 18),
             Background = new LinearGradientBrush
@@ -976,7 +1017,7 @@ public partial class MainWindow : Window
             Background = Brush("#F8FBFC"),
             BorderBrush = Brush("#D7E5EA"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(20),
             Margin = new Thickness(0, 0, 0, 18),
             Child = content
@@ -990,7 +1031,7 @@ public partial class MainWindow : Window
             Background = Brush("#FFF7ED"),
             BorderBrush = Brush("#FDBA74"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(16),
             Child = Stack(
                 Text(title, 13, "#9A3412"),
@@ -1012,7 +1053,7 @@ public partial class MainWindow : Window
             Background = Brush("#FFFFFF"),
             BorderBrush = Brush("#E2E8F0"),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(20),
             Margin = new Thickness(0, 0, 16, 16)
         };
@@ -1022,6 +1063,7 @@ public partial class MainWindow : Window
     {
         var card = Card();
         card.MaxWidth = 960;
+        card.MinWidth = 760;
         card.HorizontalAlignment = HorizontalAlignment.Left;
         card.Padding = new Thickness(26);
         return card;
@@ -1030,16 +1072,23 @@ public partial class MainWindow : Window
     private static Border ActionCard(string title, string helper, string accent, Action action)
     {
         var button = Button("Otvori", "PrimaryButton");
-        button.Click += (_, _) => action();
+        button.Click += (_, args) =>
+        {
+            args.Handled = true;
+            action();
+        };
         var card = Card();
-        card.Width = 310;
+        card.Width = 292;
+        card.MinHeight = 198;
+        card.Cursor = System.Windows.Input.Cursors.Hand;
+        card.MouseLeftButtonUp += (_, _) => action();
         card.Child = Stack(
             new Border
             {
                 Background = Brush(accent),
                 Width = 54,
                 Height = 6,
-                CornerRadius = new CornerRadius(999),
+                CornerRadius = new CornerRadius(2),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 0, 0, 14)
             },
@@ -1096,6 +1145,11 @@ public partial class MainWindow : Window
 
     private static StackPanel Field(string label, UIElement input)
     {
+        if (input is TextBox textBox && string.Equals(textBox.Tag?.ToString(), label, StringComparison.OrdinalIgnoreCase))
+        {
+            textBox.Tag = string.Empty;
+        }
+
         return new StackPanel
         {
             Margin = new Thickness(0, 0, 14, 8),
@@ -1171,7 +1225,7 @@ public partial class MainWindow : Window
         return new Border
         {
             Background = Brush(background),
-            CornerRadius = new CornerRadius(999),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(10, 4, 10, 4),
             HorizontalAlignment = HorizontalAlignment.Left,
             Child = new TextBlock { Text = text, Foreground = Brush(foreground), FontWeight = FontWeights.SemiBold }
