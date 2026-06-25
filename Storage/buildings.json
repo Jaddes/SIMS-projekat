@@ -66,5 +66,56 @@
     "Status": "PendingApproval",
     "RejectionReason": null,
     "CreatedAt": "2026-04-10T20:13:00Z"
+  },
+  {
+    "Code": "B005",
+    "Address": {
+      "Street": "Kralja Petra",
+      "Number": "18"
+    },
+    "Neighborhood": "Centar",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 6,
+    "ManagerJmbg": "1111111111111",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:14:00Z"
+  },
+  {
+    "Code": "B006",
+    "Address": {
+      "Street": "Bulevar Evrope",
+      "Number": "101"
+    },
+    "Neighborhood": "Detelinara",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 12,
+    "ManagerJmbg": "2222222222222",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:15:00Z"
+  },
+  {
+    "Code": "B007",
+    "Address": {
+      "Street": "Zmaj Jovina",
+      "Number": "3"
+    },
+    "Neighborhood": "Stari Grad",
+    "Location": {
+      "City": "Beograd",
+      "Country": "Srbija"
+    },
+    "FloorCount": 4,
+    "ManagerJmbg": "2222222222222",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:16:00Z"
   }
 ]

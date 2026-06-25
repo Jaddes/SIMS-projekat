@@ -19,5 +19,33 @@
     "Description": "Dvosoban stan, 60m2",
     "RoomCount": 2,
     "MaxTenantCount": 3
+  },
+  {
+    "BuildingCode": "B005",
+    "ApartmentNumber": 4,
+    "Description": "Jednosoban stan, 38m2",
+    "RoomCount": 1,
+    "MaxTenantCount": 1
+  },
+  {
+    "BuildingCode": "B005",
+    "ApartmentNumber": 8,
+    "Description": "Cetvorosoban porodicni stan, 96m2",
+    "RoomCount": 4,
+    "MaxTenantCount": 5
+  },
+  {
+    "BuildingCode": "B006",
+    "ApartmentNumber": 21,
+    "Description": "Trosoban stan, 80m2",
+    "RoomCount": 3,
+    "MaxTenantCount": 4
+  },
+  {
+    "BuildingCode": "B007",
+    "ApartmentNumber": 2,
+    "Description": "Dvosoban stan, 48m2",
+    "RoomCount": 2,
+    "MaxTenantCount": 1
   }
 ]
