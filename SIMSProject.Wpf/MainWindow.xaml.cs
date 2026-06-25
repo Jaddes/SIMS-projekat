@@ -276,6 +276,14 @@ public partial class MainWindow : Window
         var room = Input("Broj soba");
         var tenants = Input("Broj stanara");
         var sort = Combo("Bez sortiranja", "Spratovi rastuce", "Spratovi opadajuce");
+        var selectedBuilding = Combo();
+        selectedBuilding.MinWidth = 260;
+        var add = Button("Dodaj zgradu", "PrimaryButton");
+        var edit = Button("Edit izabranu", "SecondaryButton");
+        var delete = Button("Delete izabranu", "DangerButton");
+        var actionMessage = Message();
+        var formHost = new ContentControl();
+        List<Building> visibleBuildings = [];
         var apply = Button("Primeni", "PrimaryButton");
         apply.IsDefault = true;
         apply.Content = "Pretrazi";
@@ -306,12 +314,32 @@ public partial class MainWindow : Window
             Text("Ovaj deo se koristi samo kada je parametar pretrage 'Stanovi'. Za kombinaciju izaberite AND ili OR.", 12, "#52677A"),
             CompactRow(SizedField("Pretraga po", apartmentMode, 260), roomField, tenantField),
             CompactRow(andOperator, orOperator));
-        filter.Child = Stack(
+        var filterContent = Stack(
             Heading("Pretraga zgrada", 22),
             Text("Izaberite jedan parametar, unesite vrednost i pokrenite pretragu. Opcija Stanovi otvara dodatna polja.", 13, "#52677A"),
             mainFilters,
             apartmentPanel);
+        if (_currentUser is Administrator)
+        {
+            filterContent.Children.Add(new Border
+            {
+                Background = Brush("#F8FBFC"),
+                BorderBrush = Brush("#D7E5EA"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(12),
+                Margin = new Thickness(0, 10, 0, 0),
+                Child = Stack(
+                    Heading("Admin akcije", 16),
+                    Text("Lista ispod je ujedno pregled zgrada. Izaberite zgradu iz liste za Edit ili Delete, ili dodajte novu.", 12, "#52677A"),
+                    CompactRow(Field("Izabrana zgrada", selectedBuilding), add, edit, delete))
+            });
+        }
+
+        filter.Child = filterContent;
         panel.Children.Add(filter);
+        panel.Children.Add(actionMessage);
+        panel.Children.Add(formHost);
 
         var results = Wrap();
         panel.Children.Add(results);
@@ -319,20 +347,66 @@ public partial class MainWindow : Window
         void Refresh()
         {
             results.Children.Clear();
-            var buildings = BuildSearch(parameter.SelectedIndex, value.Text, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, sort.SelectedIndex);
-            if (buildings.Count == 0)
+            visibleBuildings = BuildSearch(parameter.SelectedIndex, value.Text, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, sort.SelectedIndex, _currentUser is Administrator);
+            if (_currentUser is Administrator)
+            {
+                selectedBuilding.ItemsSource = visibleBuildings.Select(BuildingLabel).ToList();
+                selectedBuilding.SelectedIndex = visibleBuildings.Count > 0 ? Math.Min(Math.Max(selectedBuilding.SelectedIndex, 0), visibleBuildings.Count - 1) : -1;
+                edit.IsEnabled = visibleBuildings.Count > 0;
+                delete.IsEnabled = visibleBuildings.Count > 0;
+            }
+
+            if (visibleBuildings.Count == 0)
             {
                 results.Children.Add(Empty("Nema zgrada za izabrane filtere."));
                 return;
             }
 
-            foreach (var building in buildings)
+            foreach (var building in visibleBuildings)
             {
-                results.Children.Add(BuildingCard(building));
+                results.Children.Add(_currentUser is Administrator ? AdminBuildingCard(building) : BuildingCard(building));
             }
         }
 
         apply.Click += (_, _) => Refresh();
+        add.Click += (_, _) => formHost.Content = BuildingEditor(null, actionMessage, () =>
+        {
+            formHost.Content = null;
+            Refresh();
+        });
+        edit.Click += (_, _) =>
+        {
+            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
+            {
+                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za izmenu.", true);
+                return;
+            }
+
+            formHost.Content = BuildingEditor(visibleBuildings[selectedBuilding.SelectedIndex], actionMessage, () =>
+            {
+                formHost.Content = null;
+                Refresh();
+            });
+        };
+        delete.Click += (_, _) =>
+        {
+            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
+            {
+                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za brisanje.", true);
+                return;
+            }
+
+            var building = visibleBuildings[selectedBuilding.SelectedIndex];
+            if (!Confirm($"Obrisati zgradu {building.Code}?"))
+            {
+                return;
+            }
+
+            DeleteBuildingCascade(building.Code);
+            SetInlineMessage(actionMessage, "Zgrada je obrisana.");
+            formHost.Content = null;
+            Refresh();
+        };
         sort.SelectionChanged += (_, _) => Refresh();
         parameter.SelectionChanged += (_, _) =>
         {
@@ -361,20 +435,20 @@ public partial class MainWindow : Window
         apartmentPanel.Visibility = Visibility.Collapsed;
         RefreshApartmentFields();
         Refresh();
-        if (_currentUser is Administrator)
-        {
-            AddAdminBuildingsSection(panel);
-        }
         SetContent(panel);
     }
 
-    private List<Building> BuildSearch(int parameterIndex, string query, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, int sortIndex)
+    private List<Building> BuildSearch(int parameterIndex, string query, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, int sortIndex, bool includeAllBuildings)
     {
+        var baseBuildings = includeAllBuildings
+            ? _services.Buildings.GetAll()
+            : _services.SharedBuildings.GetApprovedBuildings(sortIndex == 1);
+
         if (parameterIndex == 3)
         {
             if (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText))
             {
-                return ApplyBuildingSort(_services.SharedBuildings.GetApprovedBuildings(sortIndex == 1), sortIndex);
+                return ApplyBuildingSort(baseBuildings, sortIndex);
             }
 
             ApartmentSearchCriteria apartmentCriteria = apartmentModeIndex switch
@@ -390,26 +464,26 @@ public partial class MainWindow : Window
                 }
             };
 
-            return ApplyBuildingSort(_services.SharedBuildings.SearchApprovedBuildings(new BuildingSearchCriteria
-            {
-                Field = BuildingSearchField.ApartmentCriteria,
-                ApartmentCriteria = apartmentCriteria
-            }), sortIndex);
+            var buildingCodes = _services.Apartments.GetAll()
+                .Where(apartment => MatchesApartmentCriteria(apartment, apartmentCriteria))
+                .Select(apartment => apartment.BuildingCode)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return ApplyBuildingSort(baseBuildings.Where(building => buildingCodes.Contains(building.Code)), sortIndex);
         }
 
         if (string.IsNullOrWhiteSpace(query))
         {
-            return ApplyBuildingSort(_services.SharedBuildings.GetApprovedBuildings(sortIndex == 1), sortIndex);
+            return ApplyBuildingSort(baseBuildings, sortIndex);
         }
 
-        BuildingSearchCriteria criteria = parameterIndex switch
+        var filtered = parameterIndex switch
         {
-            1 => new BuildingSearchCriteria { Field = BuildingSearchField.Neighborhood, Query = query },
-            2 => new BuildingSearchCriteria { Field = BuildingSearchField.FloorCount, Query = query },
-            _ => new BuildingSearchCriteria { Field = BuildingSearchField.Address, Query = query }
+            1 => baseBuildings.Where(building => building.Neighborhood.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)),
+            2 => baseBuildings.Where(building => building.FloorCount.ToString() == query.Trim()),
+            _ => baseBuildings.Where(building => $"{building.Address.Street} {building.Address.Number}".Contains(query.Trim(), StringComparison.OrdinalIgnoreCase))
         };
 
-        return ApplyBuildingSort(_services.SharedBuildings.SearchApprovedBuildings(criteria), sortIndex);
+        return ApplyBuildingSort(filtered, sortIndex);
     }
 
     private static List<Building> ApplyBuildingSort(IEnumerable<Building> buildings, int sortIndex)
@@ -422,6 +496,20 @@ public partial class MainWindow : Window
         };
     }
 
+    private static bool MatchesApartmentCriteria(Apartment apartment, ApartmentSearchCriteria criteria)
+    {
+        return criteria.Mode switch
+        {
+            ApartmentSearchMode.RoomCount => apartment.RoomCount == criteria.RoomCount,
+            ApartmentSearchMode.MaxTenantCount => apartment.MaxTenantCount == criteria.MaxTenantCount,
+            ApartmentSearchMode.Combined when criteria.Operator == LogicalOperator.And =>
+                apartment.RoomCount == criteria.RoomCount && apartment.MaxTenantCount == criteria.MaxTenantCount,
+            ApartmentSearchMode.Combined =>
+                apartment.RoomCount == criteria.RoomCount || apartment.MaxTenantCount == criteria.MaxTenantCount,
+            _ => true
+        };
+    }
+
     private static bool MatchesManager(BuildingManager manager, string query)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -430,21 +518,6 @@ public partial class MainWindow : Window
         }
 
         var value = $"{manager.Jmbg} {manager.Email} {manager.FirstName} {manager.LastName} {manager.MobilePhone}";
-        return value.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
-    }
-
-    private bool MatchesAdminBuilding(Building building, string query)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return true;
-        }
-
-        var manager = _services.Users.GetAll()
-            .OfType<BuildingManager>()
-            .FirstOrDefault(item => EqualsIgnoreCase(item.Jmbg, building.ManagerJmbg));
-        var managerText = manager is null ? building.ManagerJmbg : $"{manager.FirstName} {manager.LastName} {manager.Email} {manager.Jmbg}";
-        var value = $"{building.Code} {building.Address.Street} {building.Address.Number} {building.Neighborhood} {building.Location.City} {building.Location.Country} {managerText}";
         return value.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
@@ -914,99 +987,6 @@ public partial class MainWindow : Window
         search.TextChanged += (_, _) => Refresh();
         Refresh();
         SetContent(panel);
-    }
-
-    private void AddAdminBuildingsSection(StackPanel panel)
-    {
-        var search = Input("Sifra, ulica, naselje, grad ili upravnik");
-        search.MaxWidth = 460;
-        var selectedBuilding = Combo();
-        selectedBuilding.MinWidth = 260;
-        var add = Button("Dodaj zgradu", "PrimaryButton");
-        var edit = Button("Edit izabranu", "SecondaryButton");
-        var delete = Button("Delete izabranu", "DangerButton");
-        var actionMessage = Message();
-        var formHost = new ContentControl();
-        var list = Wrap();
-        List<Building> visibleBuildings = [];
-
-        panel.Children.Add(CardWithContent(
-            Heading("Administracija zgrada", 18),
-            Text("Izaberite zgradu iz liste pa koristite Edit ili Delete. Kartice ispod sluze samo za pregled podataka iz specifikacije.", 12, "#52677A"),
-            CompactRow(
-                Field("Pretraga svih zgrada", search),
-                Field("Izabrana zgrada", selectedBuilding),
-                add,
-                edit,
-                delete)));
-        panel.Children.Add(actionMessage);
-        panel.Children.Add(formHost);
-        panel.Children.Add(list);
-
-        void Refresh()
-        {
-            list.Children.Clear();
-            visibleBuildings = _services.Buildings.GetAll()
-                .Where(building => MatchesAdminBuilding(building, search.Text))
-                .OrderBy(building => building.Code)
-                .ToList();
-            selectedBuilding.ItemsSource = visibleBuildings.Select(BuildingLabel).ToList();
-            selectedBuilding.SelectedIndex = visibleBuildings.Count > 0 ? Math.Min(Math.Max(selectedBuilding.SelectedIndex, 0), visibleBuildings.Count - 1) : -1;
-            edit.IsEnabled = visibleBuildings.Count > 0;
-            delete.IsEnabled = visibleBuildings.Count > 0;
-
-            if (visibleBuildings.Count == 0)
-            {
-                list.Children.Add(Empty("Nema zgrada za izabranu pretragu."));
-                return;
-            }
-
-            foreach (var building in visibleBuildings)
-            {
-                list.Children.Add(AdminBuildingCard(building));
-            }
-        }
-
-        add.Click += (_, _) => formHost.Content = BuildingEditor(null, actionMessage, () =>
-        {
-            formHost.Content = null;
-            Refresh();
-        });
-        edit.Click += (_, _) =>
-        {
-            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
-            {
-                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za izmenu.", true);
-                return;
-            }
-
-            formHost.Content = BuildingEditor(visibleBuildings[selectedBuilding.SelectedIndex], actionMessage, () =>
-            {
-                formHost.Content = null;
-                Refresh();
-            });
-        };
-        delete.Click += (_, _) =>
-        {
-            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
-            {
-                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za brisanje.", true);
-                return;
-            }
-
-            var building = visibleBuildings[selectedBuilding.SelectedIndex];
-            if (!Confirm($"Obrisati zgradu {building.Code}?"))
-            {
-                return;
-            }
-
-            DeleteBuildingCascade(building.Code);
-            SetInlineMessage(actionMessage, "Zgrada je obrisana.");
-            formHost.Content = null;
-            Refresh();
-        };
-        search.TextChanged += (_, _) => Refresh();
-        Refresh();
     }
 
     private void ShowAdminAddManager()
