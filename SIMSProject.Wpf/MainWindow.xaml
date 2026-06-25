@@ -41,6 +41,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="MinHeight" Value="38" />
             <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type TextBox}">
@@ -48,8 +50,7 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}">
                             <Grid>
-                                <ScrollViewer x:Name="PART_ContentHost"
-                                              Margin="{TemplateBinding Padding}" />
+                                <ScrollViewer x:Name="PART_ContentHost" />
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
                                            Foreground="#94A3B8"
@@ -76,6 +77,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="MinHeight" Value="38" />
             <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
         </Style>
         <Style x:Key="ComboInput" TargetType="ComboBox">
             <Setter Property="Padding" Value="10,7" />
