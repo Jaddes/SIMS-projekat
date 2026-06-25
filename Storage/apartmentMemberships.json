@@ -1,0 +1,11 @@
+[
+  {
+    "Id": "MEMB1",
+    "TenantJmbg": "4444444444444",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 1,
+    "ApprovedRequestId": "REQAPP1",
+    "CreatedAt": "2026-04-10T20:30:00Z",
+    "IsActive": true
+  }
+]

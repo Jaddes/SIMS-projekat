@@ -1,0 +1,23 @@
+[
+  {
+    "BuildingCode": "B001",
+    "ApartmentNumber": 1,
+    "Description": "Dvosoban stan, 55m2",
+    "RoomCount": 2,
+    "MaxTenantCount": 2
+  },
+  {
+    "BuildingCode": "B001",
+    "ApartmentNumber": 2,
+    "Description": "Trosoban stan, 72m2",
+    "RoomCount": 3,
+    "MaxTenantCount": 1
+  },
+  {
+    "BuildingCode": "B003",
+    "ApartmentNumber": 10,
+    "Description": "Dvosoban stan, 60m2",
+    "RoomCount": 2,
+    "MaxTenantCount": 3
+  }
+]

@@ -1,0 +1,70 @@
+[
+  {
+    "Code": "B001",
+    "Address": {
+      "Street": "Bulevar oslobodjenja",
+      "Number": "10"
+    },
+    "Neighborhood": "Liman",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 5,
+    "ManagerJmbg": "1111111111111",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:10:00Z"
+  },
+  {
+    "Code": "B002",
+    "Address": {
+      "Street": "Futoska",
+      "Number": "25"
+    },
+    "Neighborhood": "Novo Naselje",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 8,
+    "ManagerJmbg": "1111111111111",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:11:00Z"
+  },
+  {
+    "Code": "B003",
+    "Address": {
+      "Street": "Cara Dusana",
+      "Number": "7"
+    },
+    "Neighborhood": "Grbavica",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 3,
+    "ManagerJmbg": "2222222222222",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:12:00Z"
+  },
+  {
+    "Code": "B004",
+    "Address": {
+      "Street": "Narodnog fronta",
+      "Number": "42"
+    },
+    "Neighborhood": "Liman",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 10,
+    "ManagerJmbg": "1111111111111",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:13:00Z"
+  }
+]

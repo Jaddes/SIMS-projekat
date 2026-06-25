@@ -1,0 +1,303 @@
+@startuml
+skinparam packageStyle rectangle
+hide empty members
+
+package "Enums" {
+  enum UserType {
+    Administrator
+    Tenant
+    BuildingManager
+  }
+
+  enum BuildingStatus {
+    PendingApproval
+    Approved
+    Rejected
+  }
+
+  enum RequestStatus {
+    PendingApproval
+    Approved
+    Rejected
+  }
+
+  enum BuildingSearchField {
+    Address
+    Neighborhood
+    FloorCount
+    ApartmentCriteria
+  }
+
+  enum ApartmentSearchMode {
+    RoomCount
+    MaxTenantCount
+    Combined
+  }
+
+  enum LogicalOperator {
+    And
+    Or
+  }
+
+  enum TenantRequestFilter {
+    All
+    Pending
+    Approved
+    Rejected
+  }
+
+  enum ManagerRequestFilter {
+    Pending
+    Approved
+  }
+
+  enum ManagerBuildingFilter {
+    Pending
+    Approved
+  }
+}
+
+package "Models" {
+  abstract class User {
+    +Jmbg: string
+    +Email: string
+    +Password: string
+    +FirstName: string
+    +LastName: string
+    +MobilePhone: string
+    +UserType: UserType
+    +CreatedAt: DateTime
+  }
+
+  class Administrator
+  class Tenant
+  class BuildingManager
+
+  class Address {
+    +Street: string
+    +Number: string
+  }
+
+  class Location {
+    +City: string
+    +Country: string
+  }
+
+  class Building {
+    +Code: string
+    +Address: Address
+    +Neighborhood: string
+    +Location: Location
+    +FloorCount: int
+    +ManagerJmbg: string
+    +Status: BuildingStatus
+    +RejectionReason: string?
+    +CreatedAt: DateTime
+  }
+
+  class Apartment {
+    +BuildingCode: string
+    +ApartmentNumber: int
+    +Description: string
+    +RoomCount: int
+    +MaxTenantCount: int
+  }
+
+  class AccessRequest {
+    +Id: string
+    +TenantJmbg: string
+    +BuildingCode: string
+    +ApartmentNumber: int
+    +CreatedAt: DateTime
+    +Status: RequestStatus
+    +RejectionReason: string?
+    +ResolvedAt: DateTime?
+    +ResolvedByManagerJmbg: string?
+  }
+
+  class ApartmentMembership {
+    +Id: string
+    +TenantJmbg: string
+    +BuildingCode: string
+    +ApartmentNumber: int
+    +ApprovedRequestId: string
+    +CreatedAt: DateTime
+    +IsActive: bool
+  }
+
+  class LoginCredentials {
+    +Email: string
+    +Password: string
+  }
+
+  class BuildingSearchCriteria {
+    +Field: BuildingSearchField
+    +Query: string
+    +ApartmentCriteria: ApartmentSearchCriteria?
+  }
+
+  class ApartmentSearchCriteria {
+    +Mode: ApartmentSearchMode
+    +RoomCount: int
+    +MaxTenantCount: int
+    +Operator: LogicalOperator
+  }
+}
+
+package "RepositoryInterfaces" {
+  interface IRepository<T> {
+    +GetAll(): List<T>
+    +SaveAll(entities: List<T>): void
+  }
+
+  interface IUserRepository
+  interface IBuildingRepository
+  interface IApartmentRepository
+  interface IAccessRequestRepository
+  interface IApartmentMembershipRepository
+}
+
+package "Repositories" {
+  abstract class JsonRepositoryBase<T> {
+    +GetAll(): List<T>
+    +SaveAll(entities: List<T>): void
+  }
+
+  class UserRepository
+  class BuildingRepository
+  class ApartmentRepository
+  class AccessRequestRepository
+  class ApartmentMembershipRepository
+}
+
+package "ServiceInterfaces" {
+  interface IAuthService {
+    +Login(credentials: LoginCredentials): User?
+  }
+
+  interface ISharedBuildingService {
+    +GetApprovedBuildings(sortByFloorCount: bool): List<Building>
+    +SearchApprovedBuildings(criteria: BuildingSearchCriteria): List<Building>
+  }
+
+  interface ITenantService {
+    +RegisterTenant(tenant: Tenant): Tenant
+    +GetActiveTenantCount(buildingCode: string, apartmentNumber: int): int
+    +CreateAccessRequest(tenantJmbg: string, buildingCode: string, apartmentNumber: int): AccessRequest
+    +GetTenantRequests(tenantJmbg: string, filter: TenantRequestFilter): List<AccessRequest>
+    +WithdrawRequest(tenantJmbg: string, requestId: string): void
+  }
+
+  interface IManagerService {
+    +GetManagerRequests(managerJmbg: string, buildingCode: string, filter: ManagerRequestFilter): List<AccessRequest>
+    +ApproveRequest(managerJmbg: string, requestId: string): void
+    +RejectRequest(managerJmbg: string, requestId: string, rejectionReason: string): void
+    +GetManagerBuildings(managerJmbg: string, filter: ManagerBuildingFilter): List<Building>
+    +ApproveBuilding(managerJmbg: string, buildingCode: string): void
+    +RejectBuilding(managerJmbg: string, buildingCode: string, rejectionReason: string?): void
+    +AddApartment(managerJmbg: string, apartment: Apartment): Apartment
+  }
+
+  interface IAdminService {
+    +RegisterManager(manager: BuildingManager): BuildingManager
+    +CreateBuilding(building: Building): Building
+  }
+}
+
+package "Services" {
+  class AuthService {
+    +Login(credentials: LoginCredentials): User?
+  }
+
+  class SharedBuildingService {
+    +GetApprovedBuildings(sortByFloorCount: bool): List<Building>
+    +SearchApprovedBuildings(criteria: BuildingSearchCriteria): List<Building>
+  }
+
+  class TenantService {
+    +RegisterTenant(tenant: Tenant): Tenant
+    +GetActiveTenantCount(buildingCode: string, apartmentNumber: int): int
+    +CreateAccessRequest(tenantJmbg: string, buildingCode: string, apartmentNumber: int): AccessRequest
+    +GetTenantRequests(tenantJmbg: string, filter: TenantRequestFilter): List<AccessRequest>
+    +WithdrawRequest(tenantJmbg: string, requestId: string): void
+  }
+
+  class ManagerService {
+    +GetManagerRequests(managerJmbg: string, buildingCode: string, filter: ManagerRequestFilter): List<AccessRequest>
+    +ApproveRequest(managerJmbg: string, requestId: string): void
+    +RejectRequest(managerJmbg: string, requestId: string, rejectionReason: string): void
+    +GetManagerBuildings(managerJmbg: string, filter: ManagerBuildingFilter): List<Building>
+    +ApproveBuilding(managerJmbg: string, buildingCode: string): void
+    +RejectBuilding(managerJmbg: string, buildingCode: string, rejectionReason: string?): void
+    +AddApartment(managerJmbg: string, apartment: Apartment): Apartment
+  }
+
+  class AdminService {
+    +RegisterManager(manager: BuildingManager): BuildingManager
+    +CreateBuilding(building: Building): Building
+  }
+
+  class ValidationService {
+    +EnsureUserJmbgUnique(jmbg: string): void
+    +EnsureUserEmailUnique(email: string): void
+    +EnsureTenantPasswordUnique(password: string): void
+    +EnsureBuildingCodeUnique(buildingCode: string): void
+    +EnsureApartmentUnique(buildingCode: string, apartmentNumber: int): void
+    +GetManagerByJmbg(managerJmbg: string): BuildingManager
+    +GetTenantByJmbg(tenantJmbg: string): Tenant
+    +GetBuildingByCode(buildingCode: string): Building
+    +GetApprovedBuildingByCode(buildingCode: string): Building
+    +GetApartment(buildingCode: string, apartmentNumber: int): Apartment
+  }
+}
+
+Administrator --|> User
+Tenant --|> User
+BuildingManager --|> User
+
+Building *-- Address
+Building *-- Location
+
+IUserRepository --|> IRepository<User>
+IBuildingRepository --|> IRepository<Building>
+IApartmentRepository --|> IRepository<Apartment>
+IAccessRequestRepository --|> IRepository<AccessRequest>
+IApartmentMembershipRepository --|> IRepository<ApartmentMembership>
+
+UserRepository --|> JsonRepositoryBase<User>
+BuildingRepository --|> JsonRepositoryBase<Building>
+ApartmentRepository --|> JsonRepositoryBase<Apartment>
+AccessRequestRepository --|> JsonRepositoryBase<AccessRequest>
+ApartmentMembershipRepository --|> JsonRepositoryBase<ApartmentMembership>
+
+UserRepository ..|> IUserRepository
+BuildingRepository ..|> IBuildingRepository
+ApartmentRepository ..|> IApartmentRepository
+AccessRequestRepository ..|> IAccessRequestRepository
+ApartmentMembershipRepository ..|> IApartmentMembershipRepository
+
+AuthService ..|> IAuthService
+SharedBuildingService ..|> ISharedBuildingService
+TenantService ..|> ITenantService
+ManagerService ..|> IManagerService
+AdminService ..|> IAdminService
+
+AuthService --> IUserRepository
+SharedBuildingService --> IBuildingRepository
+SharedBuildingService --> IApartmentRepository
+TenantService --> IUserRepository
+TenantService --> IAccessRequestRepository
+TenantService --> IApartmentMembershipRepository
+TenantService --> ValidationService
+ManagerService --> IBuildingRepository
+ManagerService --> IApartmentRepository
+ManagerService --> IAccessRequestRepository
+ManagerService --> IApartmentMembershipRepository
+ManagerService --> ValidationService
+AdminService --> IUserRepository
+AdminService --> IBuildingRepository
+AdminService --> ValidationService
+ValidationService --> IUserRepository
+ValidationService --> IBuildingRepository
+ValidationService --> IApartmentRepository
+@enduml

@@ -1,0 +1,77 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor Korisnik
+actor Stanar
+actor Upravnik
+actor Administrator
+
+Korisnik <|-- Stanar
+Korisnik <|-- Upravnik
+Korisnik <|-- Administrator
+
+rectangle "SIMS Project" {
+  usecase "Prijava" as UC_Login
+  usecase "Prikaz svih zgrada" as UC_ShowBuildings
+  usecase "Sortiranje po broju spratova" as UC_SortBuildings
+  usecase "Pretraga zgrada" as UC_SearchBuildings
+  usecase "Pretraga po stanovima" as UC_SearchByApartment
+
+  usecase "Registracija stanara" as UC_RegisterTenant
+  usecase "Podnosenje zahteva" as UC_CreateRequest
+  usecase "Izbor zgrade" as UC_SelectBuilding
+  usecase "Unos broja stana" as UC_EnterApartmentNumber
+  usecase "Provera postojecih stanara" as UC_CheckExistingTenants
+  usecase "Potvrda kreiranja zahteva" as UC_ConfirmRequest
+  usecase "Prikaz mojih zahteva" as UC_ShowTenantRequests
+  usecase "Filtriranje mojih zahteva" as UC_FilterTenantRequests
+  usecase "Povlacenje zahteva" as UC_WithdrawRequest
+
+  usecase "Prikaz zahteva" as UC_ShowManagerRequests
+  usecase "Izbor svoje zgrade" as UC_SelectManagerBuilding
+  usecase "Filtriranje zahteva" as UC_FilterManagerRequests
+  usecase "Potvrda zahteva" as UC_ApproveRequest
+  usecase "Odbijanje zahteva" as UC_RejectRequest
+  usecase "Prikaz mojih zgrada" as UC_ShowManagerBuildings
+  usecase "Potvrda zgrade" as UC_ApproveBuilding
+  usecase "Odbijanje zgrade" as UC_RejectBuilding
+  usecase "Unos stana" as UC_AddApartment
+
+  usecase "Registracija upravnika" as UC_RegisterManager
+  usecase "Unos zgrade" as UC_CreateBuilding
+}
+
+Korisnik --> UC_Login
+Korisnik --> UC_ShowBuildings
+Korisnik --> UC_SearchBuildings
+
+Stanar --> UC_RegisterTenant
+Stanar --> UC_CreateRequest
+Stanar --> UC_ShowTenantRequests
+Stanar --> UC_WithdrawRequest
+
+Upravnik --> UC_ShowManagerRequests
+Upravnik --> UC_ApproveRequest
+Upravnik --> UC_RejectRequest
+Upravnik --> UC_ShowManagerBuildings
+Upravnik --> UC_ApproveBuilding
+Upravnik --> UC_RejectBuilding
+Upravnik --> UC_AddApartment
+
+Administrator --> UC_RegisterManager
+Administrator --> UC_CreateBuilding
+
+UC_SortBuildings ..> UC_ShowBuildings : <<extend>>
+UC_SearchByApartment ..> UC_SearchBuildings : <<extend>>
+UC_FilterTenantRequests ..> UC_ShowTenantRequests : <<extend>>
+UC_FilterManagerRequests ..> UC_ShowManagerRequests : <<extend>>
+UC_ShowManagerRequests ..> UC_SelectManagerBuilding : <<include>>
+UC_ApproveRequest ..> UC_SelectManagerBuilding : <<include>>
+UC_RejectRequest ..> UC_SelectManagerBuilding : <<include>>
+
+UC_CreateRequest ..> UC_SelectBuilding : <<include>>
+UC_CreateRequest ..> UC_EnterApartmentNumber : <<include>>
+UC_CreateRequest ..> UC_CheckExistingTenants : <<include>>
+UC_CreateRequest ..> UC_ConfirmRequest : <<include>>
+@enduml

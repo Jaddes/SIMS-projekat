@@ -1,0 +1,57 @@
+[
+  {
+    "$type": "administrator",
+    "Jmbg": "0000000000000",
+    "Email": "admin@sims.local",
+    "Password": "Admin123!",
+    "FirstName": "System",
+    "LastName": "Administrator",
+    "MobilePhone": "0600000000",
+    "UserType": "Administrator",
+    "CreatedAt": "2026-04-10T20:00:00Z"
+  },
+  {
+    "$type": "buildingManager",
+    "Jmbg": "1111111111111",
+    "Email": "upravnik@sims.local",
+    "Password": "Upravnik123!",
+    "FirstName": "Milan",
+    "LastName": "Upravnik",
+    "MobilePhone": "0611111111",
+    "UserType": "BuildingManager",
+    "CreatedAt": "2026-04-10T20:05:00Z"
+  },
+  {
+    "$type": "buildingManager",
+    "Jmbg": "2222222222222",
+    "Email": "upravnik2@sims.local",
+    "Password": "Upravnik234!",
+    "FirstName": "Jelena",
+    "LastName": "Upravnik",
+    "MobilePhone": "0622222222",
+    "UserType": "BuildingManager",
+    "CreatedAt": "2026-04-10T20:06:00Z"
+  },
+  {
+    "$type": "tenant",
+    "Jmbg": "3333333333333",
+    "Email": "stanar@sims.local",
+    "Password": "Stanar123!",
+    "FirstName": "Petar",
+    "LastName": "Stanar",
+    "MobilePhone": "0633333333",
+    "UserType": "Tenant",
+    "CreatedAt": "2026-04-10T20:07:00Z"
+  },
+  {
+    "$type": "tenant",
+    "Jmbg": "4444444444444",
+    "Email": "stanar2@sims.local",
+    "Password": "Stanar234!",
+    "FirstName": "Ana",
+    "LastName": "Stanar",
+    "MobilePhone": "0644444444",
+    "UserType": "Tenant",
+    "CreatedAt": "2026-04-10T20:08:00Z"
+  }
+]

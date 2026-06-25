@@ -1,0 +1,46 @@
+[
+  {
+    "Id": "REQPEND1",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 2,
+    "CreatedAt": "2026-04-10T20:20:00Z",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "ResolvedAt": null,
+    "ResolvedByManagerJmbg": null
+  },
+  {
+    "Id": "REQPEND2",
+    "TenantJmbg": "4444444444444",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 2,
+    "CreatedAt": "2026-04-10T20:21:00Z",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "ResolvedAt": null,
+    "ResolvedByManagerJmbg": null
+  },
+  {
+    "Id": "REQAPP1",
+    "TenantJmbg": "4444444444444",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 1,
+    "CreatedAt": "2026-04-10T20:22:00Z",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "ResolvedAt": "2026-04-10T20:30:00Z",
+    "ResolvedByManagerJmbg": "1111111111111"
+  },
+  {
+    "Id": "REQREJ1",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 1,
+    "CreatedAt": "2026-04-10T20:23:00Z",
+    "Status": "Rejected",
+    "RejectionReason": "Pogresan broj stana.",
+    "ResolvedAt": "2026-04-10T20:31:00Z",
+    "ResolvedByManagerJmbg": "1111111111111"
+  }
+]
