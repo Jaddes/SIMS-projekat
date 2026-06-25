@@ -920,15 +920,25 @@ public partial class MainWindow : Window
     {
         var search = Input("Sifra, ulica, naselje, grad ili upravnik");
         search.MaxWidth = 460;
+        var selectedBuilding = Combo();
+        selectedBuilding.MinWidth = 260;
         var add = Button("Dodaj zgradu", "PrimaryButton");
+        var edit = Button("Edit izabranu", "SecondaryButton");
+        var delete = Button("Delete izabranu", "DangerButton");
         var actionMessage = Message();
         var formHost = new ContentControl();
         var list = Wrap();
+        List<Building> visibleBuildings = [];
 
         panel.Children.Add(CardWithContent(
             Heading("Administracija zgrada", 18),
-            Text("Admin ovde radi View, Add, Edit i Delete za zgrade. Obican katalog iznad ostaje pregled odobrenih zgrada.", 12, "#52677A"),
-            CompactRow(Field("Pretraga svih zgrada", search), add)));
+            Text("Izaberite zgradu iz liste pa koristite Edit ili Delete. Kartice ispod sluze samo za pregled podataka iz specifikacije.", 12, "#52677A"),
+            CompactRow(
+                Field("Pretraga svih zgrada", search),
+                Field("Izabrana zgrada", selectedBuilding),
+                add,
+                edit,
+                delete)));
         panel.Children.Add(actionMessage);
         panel.Children.Add(formHost);
         panel.Children.Add(list);
@@ -936,20 +946,24 @@ public partial class MainWindow : Window
         void Refresh()
         {
             list.Children.Clear();
-            var buildings = _services.Buildings.GetAll()
+            visibleBuildings = _services.Buildings.GetAll()
                 .Where(building => MatchesAdminBuilding(building, search.Text))
                 .OrderBy(building => building.Code)
                 .ToList();
+            selectedBuilding.ItemsSource = visibleBuildings.Select(BuildingLabel).ToList();
+            selectedBuilding.SelectedIndex = visibleBuildings.Count > 0 ? Math.Min(Math.Max(selectedBuilding.SelectedIndex, 0), visibleBuildings.Count - 1) : -1;
+            edit.IsEnabled = visibleBuildings.Count > 0;
+            delete.IsEnabled = visibleBuildings.Count > 0;
 
-            if (buildings.Count == 0)
+            if (visibleBuildings.Count == 0)
             {
                 list.Children.Add(Empty("Nema zgrada za izabranu pretragu."));
                 return;
             }
 
-            foreach (var building in buildings)
+            foreach (var building in visibleBuildings)
             {
-                list.Children.Add(AdminBuildingCard(building, formHost, actionMessage, Refresh));
+                list.Children.Add(AdminBuildingCard(building));
             }
         }
 
@@ -958,6 +972,39 @@ public partial class MainWindow : Window
             formHost.Content = null;
             Refresh();
         });
+        edit.Click += (_, _) =>
+        {
+            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
+            {
+                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za izmenu.", true);
+                return;
+            }
+
+            formHost.Content = BuildingEditor(visibleBuildings[selectedBuilding.SelectedIndex], actionMessage, () =>
+            {
+                formHost.Content = null;
+                Refresh();
+            });
+        };
+        delete.Click += (_, _) =>
+        {
+            if (selectedBuilding.SelectedIndex < 0 || selectedBuilding.SelectedIndex >= visibleBuildings.Count)
+            {
+                SetInlineMessage(actionMessage, "Prvo izaberite zgradu za brisanje.", true);
+                return;
+            }
+
+            var building = visibleBuildings[selectedBuilding.SelectedIndex];
+            if (!Confirm($"Obrisati zgradu {building.Code}?"))
+            {
+                return;
+            }
+
+            DeleteBuildingCascade(building.Code);
+            SetInlineMessage(actionMessage, "Zgrada je obrisana.");
+            formHost.Content = null;
+            Refresh();
+        };
         search.TextChanged += (_, _) => Refresh();
         Refresh();
     }
@@ -1244,31 +1291,11 @@ public partial class MainWindow : Window
         return card;
     }
 
-    private Border AdminBuildingCard(Building building, ContentControl formHost, TextBlock message, Action refresh)
+    private Border AdminBuildingCard(Building building)
     {
         var card = BuildingCard(building);
         card.Width = 310;
         ((StackPanel)card.Child).Children.Add(StatusBadge(building.Status));
-        var edit = Button("Edit", "SecondaryButton");
-        edit.Click += (_, _) => formHost.Content = BuildingEditor(building, message, () =>
-        {
-            formHost.Content = null;
-            refresh();
-        });
-        var delete = Button("Delete", "DangerButton");
-        delete.Click += (_, _) =>
-        {
-            if (!Confirm($"Obrisati zgradu {building.Code}?"))
-            {
-                return;
-            }
-
-            DeleteBuildingCascade(building.Code);
-            SetInlineMessage(message, "Zgrada je obrisana.");
-            formHost.Content = null;
-            refresh();
-        };
-        ((StackPanel)card.Child).Children.Add(CompactRow(edit, delete));
         return card;
     }
 
