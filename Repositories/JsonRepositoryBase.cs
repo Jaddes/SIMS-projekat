@@ -27,10 +27,10 @@ public abstract class JsonRepositoryBase<T> : IRepository<T>
         var json = File.ReadAllText(_filePath);
         if (string.IsNullOrWhiteSpace(json))
         {
-            return [];
+            return new List<T>();
         }
 
-        return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? [];
+        return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
     }
 
     public void SaveAll(List<T> entities)

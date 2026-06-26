@@ -47,7 +47,7 @@ public class SharedBuildingService(
     {
         if (!int.TryParse(query, out var floorCount))
         {
-            return [];
+            return new List<Building>();
         }
 
         return buildings
@@ -59,7 +59,7 @@ public class SharedBuildingService(
     {
         if (criteria is null)
         {
-            return [];
+            return new List<Building>();
         }
 
         var apartments = apartmentRepository.GetAll();

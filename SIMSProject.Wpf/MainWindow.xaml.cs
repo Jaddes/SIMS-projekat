@@ -283,7 +283,7 @@ public partial class MainWindow : Window
         var delete = Button("Delete izabranu", "DangerButton");
         var actionMessage = Message();
         var formHost = new ContentControl();
-        List<Building> visibleBuildings = [];
+        List<Building> visibleBuildings = new List<Building>();
         var apply = Button("Primeni", "PrimaryButton");
         apply.IsDefault = true;
         apply.Content = "Pretrazi";
