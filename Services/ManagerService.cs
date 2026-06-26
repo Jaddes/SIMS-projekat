@@ -20,9 +20,13 @@ public class ManagerService(
         var requests = accessRequestRepository
             .GetAll()
             .Where(request => EqualsIgnoreCase(request.BuildingCode, buildingCode))
-            .Where(request => filter == ManagerRequestFilter.Pending
-                ? request.Status == RequestStatus.PendingApproval
-                : request.Status == RequestStatus.Approved)
+            .Where(request => filter switch
+            {
+                ManagerRequestFilter.Pending => request.Status == RequestStatus.PendingApproval,
+                ManagerRequestFilter.Approved => request.Status == RequestStatus.Approved,
+                ManagerRequestFilter.Rejected => request.Status == RequestStatus.Rejected,
+                _ => false
+            })
             .OrderByDescending(request => request.CreatedAt)
             .ToList();
 

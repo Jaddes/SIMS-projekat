@@ -8,7 +8,6 @@ namespace SIMSProject.Services;
 public class TenantService(
     IUserRepository userRepository,
     IAccessRequestRepository accessRequestRepository,
-    IApartmentMembershipRepository apartmentMembershipRepository,
     ValidationService validationService) : ITenantService
 {
     public Tenant RegisterTenant(Tenant tenant)
@@ -32,19 +31,24 @@ public class TenantService(
         validationService.GetApprovedBuildingByCode(buildingCode);
         validationService.GetApartment(buildingCode, apartmentNumber);
 
-        return apartmentMembershipRepository
+        return accessRequestRepository
             .GetAll()
-            .Count(item =>
-                item.IsActive &&
-                EqualsIgnoreCase(item.BuildingCode, buildingCode) &&
-                item.ApartmentNumber == apartmentNumber);
+            .Count(request =>
+                request.Status == RequestStatus.Approved &&
+                EqualsIgnoreCase(request.BuildingCode, buildingCode) &&
+                request.ApartmentNumber == apartmentNumber);
     }
 
     public AccessRequest CreateAccessRequest(string tenantJmbg, string buildingCode, int apartmentNumber)
     {
         validationService.GetTenantByJmbg(tenantJmbg);
         validationService.GetApprovedBuildingByCode(buildingCode);
-        validationService.GetApartment(buildingCode, apartmentNumber);
+        var apartment = validationService.GetApartment(buildingCode, apartmentNumber);
+        var activeTenantCount = GetActiveTenantCount(buildingCode, apartmentNumber);
+        if (activeTenantCount >= apartment.MaxTenantCount)
+        {
+            throw new InvalidOperationException("Stan je popunjen i trenutno ne prima nove stanare.");
+        }
 
         var requests = accessRequestRepository.GetAll();
         var request = new AccessRequest

@@ -117,5 +117,56 @@
     "Status": "Approved",
     "RejectionReason": null,
     "CreatedAt": "2026-04-10T20:16:00Z"
+  },
+  {
+    "Code": "B008",
+    "Address": {
+      "Street": "Bulevar Mihajla Pupina",
+      "Number": "15"
+    },
+    "Neighborhood": "Centar",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 9,
+    "ManagerJmbg": "1111111111111",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:17:00Z"
+  },
+  {
+    "Code": "B009",
+    "Address": {
+      "Street": "Partizanska",
+      "Number": "88"
+    },
+    "Neighborhood": "Salajka",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 7,
+    "ManagerJmbg": "2222222222222",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:18:00Z"
+  },
+  {
+    "Code": "B010",
+    "Address": {
+      "Street": "Vojvode Stepe",
+      "Number": "12"
+    },
+    "Neighborhood": "Telep",
+    "Location": {
+      "City": "Novi Sad",
+      "Country": "Srbija"
+    },
+    "FloorCount": 2,
+    "ManagerJmbg": "1111111111111",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "CreatedAt": "2026-04-10T20:19:00Z"
   }
 ]

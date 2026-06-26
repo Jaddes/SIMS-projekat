@@ -47,5 +47,47 @@
     "Description": "Dvosoban stan, 48m2",
     "RoomCount": 2,
     "MaxTenantCount": 1
+  },
+  {
+    "BuildingCode": "B003",
+    "ApartmentNumber": 23,
+    "Description": "Dvosoban test stan",
+    "RoomCount": 2,
+    "MaxTenantCount": 5
+  },
+  {
+    "BuildingCode": "B001",
+    "ApartmentNumber": 6,
+    "Description": "Cetvorosoban stan za test zahteva",
+    "RoomCount": 4,
+    "MaxTenantCount": 6
+  },
+  {
+    "BuildingCode": "B005",
+    "ApartmentNumber": 45,
+    "Description": "Dvosoban stan za test pretrage",
+    "RoomCount": 2,
+    "MaxTenantCount": 3
+  },
+  {
+    "BuildingCode": "B008",
+    "ApartmentNumber": 12,
+    "Description": "Dvosoban stan sa pogledom na centar",
+    "RoomCount": 2,
+    "MaxTenantCount": 4
+  },
+  {
+    "BuildingCode": "B008",
+    "ApartmentNumber": 14,
+    "Description": "Petosoban stan za vecu porodicu",
+    "RoomCount": 5,
+    "MaxTenantCount": 6
+  },
+  {
+    "BuildingCode": "B010",
+    "ApartmentNumber": 3,
+    "Description": "Garsonjera za jednog ili dva stanara",
+    "RoomCount": 1,
+    "MaxTenantCount": 2
   }
 ]

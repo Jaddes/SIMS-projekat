@@ -66,10 +66,15 @@ public class ManagerMenu(
 
         Console.WriteLine("1. Na cekanju");
         Console.WriteLine("2. Potvrdjeni");
+        Console.WriteLine("3. Odbijeni");
 
-        var filter = InputValidator.ReadMenuChoice("Izbor: ", 1, 2) == 1
-            ? ManagerRequestFilter.Pending
-            : ManagerRequestFilter.Approved;
+        var choice = InputValidator.ReadMenuChoice("Izbor: ", 1, 3);
+        var filter = choice switch
+        {
+            2 => ManagerRequestFilter.Approved,
+            3 => ManagerRequestFilter.Rejected,
+            _ => ManagerRequestFilter.Pending
+        };
 
         var requests = managerService.GetManagerRequests(manager.Jmbg, buildingCode, filter);
         if (requests.Count == 0)
@@ -87,11 +92,12 @@ public class ManagerMenu(
                 request.BuildingCode,
                 request.ApartmentNumber.ToString(),
                 request.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
-                request.Status.ToString()
+                request.Status.ToString(),
+                request.RejectionReason ?? string.Empty
             })
             .ToList();
 
-        TablePrinter.Print(["Id", "TenantJmbg", "Building", "Apartment", "Created", "Status"], rows);
+        TablePrinter.Print(["Id", "TenantJmbg", "Building", "Apartment", "Created", "Status", "Reason"], rows);
         ConsoleHelper.Pause();
     }
 

@@ -7,5 +7,23 @@
     "ApprovedRequestId": "REQAPP1",
     "CreatedAt": "2026-04-10T20:30:00Z",
     "IsActive": true
+  },
+  {
+    "Id": "DBC21993",
+    "TenantJmbg": "4444444444444",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 2,
+    "ApprovedRequestId": "REQPEND2",
+    "CreatedAt": "2026-06-26T17:42:24.7127481Z",
+    "IsActive": true
+  },
+  {
+    "Id": "0281EA44",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B010",
+    "ApartmentNumber": 3,
+    "ApprovedRequestId": "0A86EC5C",
+    "CreatedAt": "2026-06-26T18:30:37.4943266Z",
+    "IsActive": true
   }
 ]

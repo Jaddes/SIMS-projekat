@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using SIMSProject.Enums;
@@ -20,6 +21,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += (_, _) => EnsureWindowFitsScreen();
         PreviewKeyDown += HandleGlobalShortcuts;
         ShowLogin();
     }
@@ -32,16 +34,19 @@ public partial class MainWindow : Window
         var page = new Grid
         {
             MinHeight = 560,
-            Margin = new Thickness(24),
+            Margin = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch
         };
+        page.SetBinding(WidthProperty, new Binding(nameof(ActualWidth)) { Source = Root });
+        page.SetBinding(MinHeightProperty, new Binding(nameof(ActualHeight)) { Source = Root });
         var loginCard = Card();
         loginCard.Width = 460;
         loginCard.MaxWidth = 460;
         loginCard.VerticalAlignment = VerticalAlignment.Center;
         loginCard.HorizontalAlignment = HorizontalAlignment.Center;
         loginCard.Padding = new Thickness(28);
+        loginCard.Margin = new Thickness(24);
         var form = new StackPanel();
         form.Children.Add(Heading("Dobrodosli", 26));
         form.Children.Add(Text("Unesite email i lozinku. Sistem sam prepoznaje ulogu korisnika.", 13, "#52677A"));
@@ -54,6 +59,8 @@ public partial class MainWindow : Window
 
         var loginButton = Button("Login", "PrimaryButton");
         loginButton.IsDefault = true;
+        loginButton.HorizontalAlignment = HorizontalAlignment.Stretch;
+        loginButton.Margin = new Thickness(0, 16, 0, 6);
         loginButton.Click += (_, _) =>
         {
             SetMessage("");
@@ -74,6 +81,8 @@ public partial class MainWindow : Window
         };
 
         var registerButton = Button("Registracija stanara", "SecondaryButton");
+        registerButton.HorizontalAlignment = HorizontalAlignment.Stretch;
+        registerButton.Margin = new Thickness(0, 0, 0, 0);
         registerButton.Click += (_, _) => ShowTenantRegistration();
         form.Children.Add(loginButton);
         form.Children.Add(registerButton);
@@ -85,6 +94,38 @@ public partial class MainWindow : Window
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         });
+    }
+
+    private void EnsureWindowFitsScreen()
+    {
+        var workArea = SystemParameters.WorkArea;
+        if (Width > workArea.Width - 24)
+        {
+            Width = Math.Max(MinWidth, workArea.Width - 24);
+        }
+
+        if (Height > workArea.Height - 24)
+        {
+            Height = Math.Max(MinHeight, workArea.Height - 24);
+        }
+
+        if (Left < workArea.Left + 12)
+        {
+            Left = workArea.Left + 12;
+        }
+        else if (Left + ActualWidth > workArea.Right - 12)
+        {
+            Left = Math.Max(workArea.Left + 12, workArea.Right - ActualWidth - 12);
+        }
+
+        if (Top < workArea.Top + 12)
+        {
+            Top = workArea.Top + 12;
+        }
+        else if (Top + ActualHeight > workArea.Bottom - 12)
+        {
+            Top = Math.Max(workArea.Top + 12, workArea.Bottom - ActualHeight - 12);
+        }
     }
 
     private void ShowTenantRegistration()
@@ -184,7 +225,7 @@ public partial class MainWindow : Window
 
         var logout = Button("Logout", "DangerButton");
         logout.Margin = new Thickness(0, 10, 18, 10);
-        logout.MinWidth = 132;
+        logout.Width = 132;
         logout.Click += (_, _) => ShowLogin();
         Grid.SetColumn(logout, 2);
         top.Children.Add(logout);
@@ -275,6 +316,12 @@ public partial class MainWindow : Window
         var orOperator = new RadioButton { Content = "OR (|)", GroupName = "ApartmentOperator", Margin = new Thickness(0, 8, 16, 8) };
         var room = Input("Broj soba");
         var tenants = Input("Broj stanara");
+        var availableOnly = new CheckBox
+        {
+            Content = "Prikazi samo stanove koji imaju slobodna mesta",
+            Margin = new Thickness(0, 8, 16, 8),
+            VerticalAlignment = VerticalAlignment.Center
+        };
         var sort = Combo("Bez sortiranja", "Spratovi rastuce", "Spratovi opadajuce");
         var selectedBuilding = Combo();
         selectedBuilding.MinWidth = 260;
@@ -284,6 +331,7 @@ public partial class MainWindow : Window
         var actionMessage = Message();
         var formHost = new ContentControl();
         List<Building> visibleBuildings = new List<Building>();
+        Dictionary<string, List<Apartment>> matchedApartmentsByBuilding = new(StringComparer.OrdinalIgnoreCase);
         var apply = Button("Primeni", "PrimaryButton");
         apply.IsDefault = true;
         apply.Content = "Pretrazi";
@@ -313,7 +361,7 @@ public partial class MainWindow : Window
             Heading("Pretraga po stanovima", 16),
             Text("Ovaj deo se koristi samo kada je parametar pretrage 'Stanovi'. Za kombinaciju izaberite AND ili OR.", 12, "#52677A"),
             CompactRow(SizedField("Pretraga po", apartmentMode, 260), roomField, tenantField),
-            CompactRow(andOperator, orOperator));
+            CompactRow(andOperator, orOperator, availableOnly));
         var filterContent = Stack(
             Heading("Pretraga zgrada", 22),
             Text("Izaberite jedan parametar, unesite vrednost i pokrenite pretragu. Opcija Stanovi otvara dodatna polja.", 13, "#52677A"),
@@ -347,7 +395,8 @@ public partial class MainWindow : Window
         void Refresh()
         {
             results.Children.Clear();
-            visibleBuildings = BuildSearch(parameter.SelectedIndex, value.Text, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, sort.SelectedIndex, _currentUser is Administrator);
+            matchedApartmentsByBuilding = BuildMatchedApartmentMap(parameter.SelectedIndex, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, availableOnly.IsChecked == true);
+            visibleBuildings = BuildSearch(parameter.SelectedIndex, value.Text, apartmentMode.SelectedIndex, andOperator.IsChecked == true, room.Text, tenants.Text, availableOnly.IsChecked == true, sort.SelectedIndex, _currentUser is Administrator);
             if (_currentUser is Administrator)
             {
                 selectedBuilding.ItemsSource = visibleBuildings.Select(BuildingLabel).ToList();
@@ -364,7 +413,8 @@ public partial class MainWindow : Window
 
             foreach (var building in visibleBuildings)
             {
-                results.Children.Add(_currentUser is Administrator ? AdminBuildingCard(building) : BuildingCard(building));
+                matchedApartmentsByBuilding.TryGetValue(building.Code, out var matchedApartments);
+                results.Children.Add(_currentUser is Administrator ? AdminBuildingCard(building, matchedApartments) : BuildingCard(building, matchedApartments));
             }
         }
 
@@ -408,13 +458,19 @@ public partial class MainWindow : Window
             Refresh();
         };
         sort.SelectionChanged += (_, _) => Refresh();
+        availableOnly.Checked += (_, _) => Refresh();
+        availableOnly.Unchecked += (_, _) => Refresh();
         parameter.SelectionChanged += (_, _) =>
         {
             var isApartment = parameter.SelectedIndex == 3;
             value.IsEnabled = !isApartment;
+            value.Opacity = isApartment ? 0.55 : 1;
+            value.Text = isApartment ? string.Empty : value.Text;
+            valueField.Visibility = isApartment ? Visibility.Collapsed : Visibility.Visible;
             apartmentPanel.Visibility = isApartment ? Visibility.Visible : Visibility.Collapsed;
             value.Tag = parameter.SelectedIndex switch
             {
+                3 => "Koristite polja ispod",
                 1 => "Deo naziva naselja",
                 2 => "Broj spratova, npr. 5",
                 _ => "Ulica ili deo adrese"
@@ -428,6 +484,7 @@ public partial class MainWindow : Window
             tenants.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex is 1 or 2;
             andOperator.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex == 2;
             orOperator.IsEnabled = parameter.SelectedIndex == 3 && apartmentMode.SelectedIndex == 2;
+            availableOnly.IsEnabled = parameter.SelectedIndex == 3;
         }
 
         parameter.SelectedIndex = 0;
@@ -438,7 +495,7 @@ public partial class MainWindow : Window
         SetContent(panel);
     }
 
-    private List<Building> BuildSearch(int parameterIndex, string query, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, int sortIndex, bool includeAllBuildings)
+    private List<Building> BuildSearch(int parameterIndex, string query, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, bool availableOnly, int sortIndex, bool includeAllBuildings)
     {
         var baseBuildings = includeAllBuildings
             ? _services.Buildings.GetAll()
@@ -446,26 +503,15 @@ public partial class MainWindow : Window
 
         if (parameterIndex == 3)
         {
-            if (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText))
+            if (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText) && !availableOnly)
             {
                 return ApplyBuildingSort(baseBuildings, sortIndex);
             }
 
-            ApartmentSearchCriteria apartmentCriteria = apartmentModeIndex switch
-            {
-                0 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.RoomCount, RoomCount = ToInt(roomText) },
-                1 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.MaxTenantCount, MaxTenantCount = ToInt(tenantText) },
-                _ => new ApartmentSearchCriteria
-                {
-                    Mode = ApartmentSearchMode.Combined,
-                    RoomCount = ToInt(roomText),
-                    MaxTenantCount = ToInt(tenantText),
-                    Operator = useAndOperator ? LogicalOperator.And : LogicalOperator.Or
-                }
-            };
-
+            var apartmentCriteria = CreateApartmentCriteria(apartmentModeIndex, useAndOperator, roomText, tenantText);
             var buildingCodes = _services.Apartments.GetAll()
-                .Where(apartment => MatchesApartmentCriteria(apartment, apartmentCriteria))
+                .Where(apartment => apartmentCriteria is null || MatchesApartmentCriteria(apartment, apartmentCriteria))
+                .Where(apartment => !availableOnly || HasFreePlaces(apartment))
                 .Select(apartment => apartment.BuildingCode)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             return ApplyBuildingSort(baseBuildings.Where(building => buildingCodes.Contains(building.Code)), sortIndex);
@@ -484,6 +530,44 @@ public partial class MainWindow : Window
         };
 
         return ApplyBuildingSort(filtered, sortIndex);
+    }
+
+    private Dictionary<string, List<Apartment>> BuildMatchedApartmentMap(int parameterIndex, int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText, bool availableOnly)
+    {
+        if (parameterIndex != 3 || (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText) && !availableOnly))
+        {
+            return new Dictionary<string, List<Apartment>>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var apartmentCriteria = CreateApartmentCriteria(apartmentModeIndex, useAndOperator, roomText, tenantText);
+
+        return _services.Apartments.GetAll()
+            .Where(apartment => apartmentCriteria is null || MatchesApartmentCriteria(apartment, apartmentCriteria))
+            .Where(apartment => !availableOnly || HasFreePlaces(apartment))
+            .OrderBy(apartment => apartment.ApartmentNumber)
+            .GroupBy(apartment => apartment.BuildingCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static ApartmentSearchCriteria? CreateApartmentCriteria(int apartmentModeIndex, bool useAndOperator, string roomText, string tenantText)
+    {
+        if (string.IsNullOrWhiteSpace(roomText) && string.IsNullOrWhiteSpace(tenantText))
+        {
+            return null;
+        }
+
+        return apartmentModeIndex switch
+        {
+            0 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.RoomCount, RoomCount = ToInt(roomText) },
+            1 => new ApartmentSearchCriteria { Mode = ApartmentSearchMode.MaxTenantCount, MaxTenantCount = ToInt(tenantText) },
+            _ => new ApartmentSearchCriteria
+            {
+                Mode = ApartmentSearchMode.Combined,
+                RoomCount = ToInt(roomText),
+                MaxTenantCount = ToInt(tenantText),
+                Operator = useAndOperator ? LogicalOperator.And : LogicalOperator.Or
+            }
+        };
     }
 
     private static List<Building> ApplyBuildingSort(IEnumerable<Building> buildings, int sortIndex)
@@ -521,12 +605,12 @@ public partial class MainWindow : Window
         return value.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
-    private Border BuildingCard(Building building)
+    private Border BuildingCard(Building building, List<Apartment>? matchedApartments = null)
     {
         var card = Card();
         card.Width = 286;
         card.MinHeight = 172;
-        card.Child = Stack(
+        var content = Stack(
             new Border
             {
                 Background = Brush("#FF5A1F"),
@@ -540,7 +624,80 @@ public partial class MainWindow : Window
             Text($"{building.Address.Street} {building.Address.Number}", 16, "#111827"),
             Text($"{building.Neighborhood} - {building.Location.City}, {building.Location.Country}", 13, "#475569"),
             Badge($"{building.FloorCount} spratova", "#DBEAFE", "#1D4ED8"));
+
+        if (matchedApartments is { Count: > 0 })
+        {
+            content.Children.Add(MatchedApartmentsBlock(matchedApartments));
+        }
+
+        card.Child = content;
         return card;
+    }
+
+    private Border MatchedApartmentsBlock(List<Apartment> apartments)
+    {
+        var list = new StackPanel();
+        var visibleApartments = apartments.Take(3).ToList();
+        foreach (var apartment in visibleApartments)
+        {
+            var occupancy = GetApartmentOccupancy(apartment);
+            list.Children.Add(new TextBlock
+            {
+                Text = $"Stan {apartment.ApartmentNumber}: {apartment.RoomCount} soba, max {apartment.MaxTenantCount}, trenutno {occupancy.CurrentTenantCount}, slobodno {occupancy.FreePlaces} - {occupancy.Status}",
+                FontSize = 12,
+                Foreground = Brush(occupancy.FreePlaces > 0 ? "#0F766E" : "#991B1B"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 1, 0, 1)
+            });
+        }
+
+        if (apartments.Count > visibleApartments.Count)
+        {
+            list.Children.Add(new TextBlock
+            {
+                Text = $"+ jos {apartments.Count - visibleApartments.Count} stanova",
+                FontSize = 12,
+                Foreground = Brush("#64748B"),
+                FontStyle = FontStyles.Italic,
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+        }
+
+        return new Border
+        {
+            Background = Brush("#ECFDF5"),
+            BorderBrush = Brush("#A7F3D0"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 10, 0, 0),
+            Child = Stack(
+                Text("Stanovi koji odgovaraju filteru", 12, "#065F46"),
+                list)
+        };
+    }
+
+    private ApartmentOccupancy GetApartmentOccupancy(Apartment apartment)
+    {
+        var currentTenantCount = GetApprovedTenantCount(apartment);
+        var freePlaces = Math.Max(0, apartment.MaxTenantCount - currentTenantCount);
+        return new ApartmentOccupancy(
+            currentTenantCount,
+            freePlaces,
+            freePlaces > 0 ? "Ima mesta" : "Popunjen");
+    }
+
+    private bool HasFreePlaces(Apartment apartment)
+    {
+        return GetApartmentOccupancy(apartment).FreePlaces > 0;
+    }
+
+    private int GetApprovedTenantCount(Apartment apartment)
+    {
+        return _services.AccessRequests.GetAll().Count(request =>
+            request.Status == RequestStatus.Approved &&
+            EqualsIgnoreCase(request.BuildingCode, apartment.BuildingCode) &&
+            request.ApartmentNumber == apartment.ApartmentNumber);
     }
 
     private void ShowTenantRequests()
@@ -554,8 +711,8 @@ public partial class MainWindow : Window
         var panel = Page(
             "Moji zahtevi",
             "Pratite status svakog zahteva i povucite zahtev koji jos nije obradjen.",
-            "Pending zahtevi mogu da se povuku.",
-            "Rejected zahtevi prikazuju razlog odbijanja.");
+            "Zahtevi koji cekaju odobrenje mogu da se povuku.",
+            "Odbijeni zahtevi prikazuju poruku i razlog odbijanja.");
         var filter = Combo("Svi", "Na cekanju", "Odobreni", "Odbijeni");
         filter.Width = 220;
         panel.Children.Add(CardWithContent(Field("Status", filter)));
@@ -581,7 +738,7 @@ public partial class MainWindow : Window
 
             foreach (var request in requests)
             {
-                var card = RequestCard(request);
+                var card = RequestCard(request, true);
                 if (request.Status == RequestStatus.PendingApproval)
                 {
                     var withdraw = Button("Povuci zahtev", "DangerButton");
@@ -619,7 +776,7 @@ public partial class MainWindow : Window
         var panel = Page(
             "Novi zahtev",
             "Unesite zgradu i stan, proverite zauzetost, pa potvrdite ili promenite unos.",
-            "Upozorenje za zauzet stan ne blokira slanje zahteva.",
+            "Popunjen stan ne prima nove zahteve.",
             "Dugme za potvrdu postaje aktivno tek nakon provere.");
         var card = FormCard();
         var form = new StackPanel();
@@ -649,11 +806,20 @@ public partial class MainWindow : Window
             Try(() =>
             {
                 var count = _services.Tenants.GetActiveTenantCount(buildingCode.Text.Trim(), apartmentNo);
-                state.Foreground = Brush(count > 0 ? "#B45309" : "#15803D");
+                var apartment = _services.Apartments.GetAll().First(item =>
+                    EqualsIgnoreCase(item.BuildingCode, buildingCode.Text.Trim()) &&
+                    item.ApartmentNumber == apartmentNo);
+                var freePlaces = Math.Max(0, apartment.MaxTenantCount - count);
+                state.Foreground = Brush(freePlaces == 0 ? "#B91C1C" : count > 0 ? "#B45309" : "#15803D");
                 state.Text = count > 0
-                    ? $"Upozorenje: stan vec ima {count} aktivnih stanara."
-                    : "Stan nema aktivnih stanara. Mozete poslati zahtev.";
-                create.IsEnabled = true;
+                    ? $"Stan trenutno ima {count}/{apartment.MaxTenantCount} odobrenih stanara. Slobodna mesta: {freePlaces}."
+                    : $"Stan nema odobrenih stanara. Slobodna mesta: {freePlaces}.";
+                if (freePlaces == 0)
+                {
+                    state.Text = "Stan je popunjen i trenutno ne prima nove stanare.";
+                }
+
+                create.IsEnabled = freePlaces > 0;
                 change.IsEnabled = true;
             }, state);
         };
@@ -746,6 +912,7 @@ public partial class MainWindow : Window
                     {
                         _services.Managers.ApproveBuilding(manager.Jmbg, building.Code);
                         SetInlineMessage(actionMessage, "Zgrada je potvrdjena.");
+                        filter.SelectedIndex = 1;
                         Refresh();
                     }, actionMessage);
                     var reject = Button("Odbij zgradu", "DangerButton");
@@ -785,10 +952,10 @@ public partial class MainWindow : Window
             "Zahtevi za pristup",
             "Izaberite jednu odobrenu zgradu, zatim obradite njene zahteve.",
             "Pending zahteve mozete potvrditi ili odbiti.",
-            "Odbijanje zahteva zahteva obavezno obrazlozenje.");
+            "Odbijeni zahtevi ostaju vidljivi sa razlogom odbijanja.");
         var buildings = _services.Managers.GetManagerBuildings(manager.Jmbg, ManagerBuildingFilter.Approved);
         var buildingCombo = Combo(buildings.Select(BuildingLabel).ToArray());
-        var status = Combo("Na cekanju", "Odobreni");
+        var status = Combo("Na cekanju", "Odobreni", "Odbijeni");
         var actionMessage = Message();
         var list = Wrap();
         panel.Children.Add(CardWithContent(
@@ -807,13 +974,21 @@ public partial class MainWindow : Window
             }
 
             var building = buildings[Math.Max(0, buildingCombo.SelectedIndex)];
-            var selectedStatus = status.SelectedIndex == 0 ? ManagerRequestFilter.Pending : ManagerRequestFilter.Approved;
+            var selectedStatus = status.SelectedIndex switch
+            {
+                1 => ManagerRequestFilter.Approved,
+                2 => ManagerRequestFilter.Rejected,
+                _ => ManagerRequestFilter.Pending
+            };
             var requests = _services.Managers.GetManagerRequests(manager.Jmbg, building.Code, selectedStatus);
             if (requests.Count == 0)
             {
-                list.Children.Add(Empty(selectedStatus == ManagerRequestFilter.Pending
-                    ? "No pending requests for this building."
-                    : "Nema odobrenih zahteva za ovu zgradu."));
+                list.Children.Add(Empty(selectedStatus switch
+                {
+                    ManagerRequestFilter.Approved => "Nema odobrenih zahteva za ovu zgradu.",
+                    ManagerRequestFilter.Rejected => "Nema odbijenih zahteva za ovu zgradu.",
+                    _ => "Nema zahteva na cekanju za ovu zgradu."
+                }));
                 return;
             }
 
@@ -828,6 +1003,7 @@ public partial class MainWindow : Window
                     {
                         _services.Managers.ApproveRequest(manager.Jmbg, request.Id);
                         SetInlineMessage(actionMessage, "Zahtev je potvrdjen.");
+                        status.SelectedIndex = 1;
                         Refresh();
                     }, actionMessage);
                     var reject = Button("Odbij zahtev", "DangerButton");
@@ -846,6 +1022,7 @@ public partial class MainWindow : Window
                             {
                                 _services.Managers.RejectRequest(manager.Jmbg, request.Id, reason.Text);
                                 SetInlineMessage(actionMessage, "Zahtev je odbijen.");
+                                status.SelectedIndex = 2;
                                 Refresh();
                             }, actionMessage);
                         }
@@ -875,22 +1052,33 @@ public partial class MainWindow : Window
         var panel = Page(
             "Unos stana",
             "Dodajte stan u zgradu kojom upravljate.",
-            "Sifra zgrade mora pripadati vasoj odobrenoj zgradi.",
+            "Izaberite svoju odobrenu zgradu i odmah vidite sve njene stanove.",
             "Broj stana mora biti jedinstven u okviru zgrade.");
         var card = FormCard();
         var form = new StackPanel();
-        var code = Input("Sifra zgrade");
+        var buildings = _services.Managers.GetManagerBuildings(manager.Jmbg, ManagerBuildingFilter.Approved);
+        var buildingCombo = Combo(buildings.Select(BuildingLabel).ToArray());
+        buildingCombo.MinWidth = 320;
         var number = Input("Broj stana");
         var description = Input("Opis");
         var rooms = Input("Broj soba");
         var maxTenants = Input("Max broj stanara");
         _message = Message();
+        var apartmentsHost = new ContentControl();
         var save = Button("Dodaj stan", "PrimaryButton");
         save.IsDefault = true;
+        save.IsEnabled = buildings.Count > 0;
         save.Click += (_, _) =>
         {
             SetMessage("");
-            if (!RequireFormFields(_message, ("Sifra zgrade", code), ("Opis", description)) ||
+            if (buildingCombo.SelectedIndex < 0 || buildingCombo.SelectedIndex >= buildings.Count)
+            {
+                SetMessage("Izaberite zgradu za unos stana.", true);
+                buildingCombo.Focus();
+                return;
+            }
+
+            if (!RequireFormFields(_message, ("Opis", description)) ||
                 !TryReadPositiveInt(_message, "Broj stana", number, out var apartmentNo) ||
                 !TryReadPositiveInt(_message, "Broj soba", rooms, out var roomCount) ||
                 !TryReadPositiveInt(_message, "Max broj stanara", maxTenants, out var maxTenantCount))
@@ -900,30 +1088,65 @@ public partial class MainWindow : Window
 
             Try(() =>
             {
+                var building = buildings[buildingCombo.SelectedIndex];
                 _services.Managers.AddApartment(manager.Jmbg, new Apartment
                 {
-                    BuildingCode = code.Text.Trim(),
+                    BuildingCode = building.Code,
                     ApartmentNumber = apartmentNo,
                     Description = description.Text.Trim(),
                     RoomCount = roomCount,
                     MaxTenantCount = maxTenantCount
                 });
                 SetMessage("Stan je dodat.");
-                Clear(code, number, description, rooms, maxTenants);
+                Clear(number, description, rooms, maxTenants);
+                RefreshApartments();
             });
         };
         var clearForm = Button("Ocisti formu", "SecondaryButton");
         clearForm.Click += (_, _) =>
         {
-            Clear(code, number, description, rooms, maxTenants);
+            Clear(number, description, rooms, maxTenants);
             SetMessage("");
         };
         var cancel = Button("Odustani", "SecondaryButton");
         cancel.IsCancel = true;
         cancel.Click += (_, _) => ShowDashboard();
+
+        void RefreshApartments()
+        {
+            if (buildings.Count == 0)
+            {
+                apartmentsHost.Content = Empty("Nemate odobrenih zgrada za unos stanova.");
+                return;
+            }
+
+            var selectedIndex = buildingCombo.SelectedIndex < 0 ? 0 : buildingCombo.SelectedIndex;
+            var selectedBuilding = buildings[selectedIndex];
+            var rows = _services.Apartments.GetAll()
+                .Where(apartment => EqualsIgnoreCase(apartment.BuildingCode, selectedBuilding.Code))
+                .OrderBy(apartment => apartment.ApartmentNumber)
+                .Select(apartment =>
+                {
+                    var occupancy = GetApartmentOccupancy(apartment);
+                    return new ApartmentTableRow(
+                        apartment.ApartmentNumber,
+                        apartment.Description,
+                        apartment.RoomCount,
+                        apartment.MaxTenantCount,
+                        occupancy.CurrentTenantCount,
+                        occupancy.FreePlaces,
+                        occupancy.Status);
+                })
+                .ToList();
+
+            apartmentsHost.Content = rows.Count == 0
+                ? Empty("Nema dodatih stanova.")
+                : ApartmentTable(rows);
+        }
+
+        buildingCombo.SelectionChanged += (_, _) => RefreshApartments();
         AddAll(form,
             FormGrid(
-                Field("Sifra zgrade", code),
                 Field("Broj stana", number),
                 Field("Opis", description),
                 Field("Broj soba", rooms),
@@ -931,7 +1154,18 @@ public partial class MainWindow : Window
             _message,
             CompactRow(save, clearForm, cancel));
         card.Child = form;
+        var tableCard = CardWithContent(
+            Heading("Stanovi izabrane zgrade", 18),
+            Text("Tabela se osvezava nakon izbora zgrade i posle svakog uspesnog dodavanja stana.", 13, "#52677A"),
+            Field("Zgrada", buildingCombo),
+            apartmentsHost);
+        tableCard.MaxWidth = 920;
+        tableCard.HorizontalAlignment = HorizontalAlignment.Left;
+
+        panel.Children.Add(tableCard);
         panel.Children.Add(card);
+        buildingCombo.SelectedIndex = buildings.Count > 0 ? 0 : -1;
+        RefreshApartments();
         SetContent(panel);
     }
 
@@ -1271,12 +1505,31 @@ public partial class MainWindow : Window
         return card;
     }
 
-    private Border AdminBuildingCard(Building building)
+    private Border AdminBuildingCard(Building building, List<Apartment>? matchedApartments = null)
     {
-        var card = BuildingCard(building);
+        var card = BuildingCard(building, matchedApartments);
         card.Width = 310;
         ((StackPanel)card.Child).Children.Add(StatusBadge(building.Status));
         return card;
+    }
+
+    private static DataGrid ApartmentTable(List<ApartmentTableRow> rows)
+    {
+        var table = new DataGrid
+        {
+            ItemsSource = rows,
+            MinHeight = 120,
+            MaxHeight = 320
+        };
+        table.SetResourceReference(StyleProperty, "TableGrid");
+        table.Columns.Add(new DataGridTextColumn { Header = "Broj stana", Binding = new Binding(nameof(ApartmentTableRow.ApartmentNumber)), Width = new DataGridLength(90) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Opis", Binding = new Binding(nameof(ApartmentTableRow.Description)), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Broj soba", Binding = new Binding(nameof(ApartmentTableRow.RoomCount)), Width = new DataGridLength(90) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Max broj stanara", Binding = new Binding(nameof(ApartmentTableRow.MaxTenantCount)), Width = new DataGridLength(130) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Trenutno stanara", Binding = new Binding(nameof(ApartmentTableRow.CurrentTenantCount)), Width = new DataGridLength(130) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Slobodna mesta", Binding = new Binding(nameof(ApartmentTableRow.FreePlaces)), Width = new DataGridLength(120) });
+        table.Columns.Add(new DataGridTextColumn { Header = "Status", Binding = new Binding(nameof(ApartmentTableRow.Status)), Width = new DataGridLength(110) });
+        return table;
     }
 
     private Border BuildingEditor(Building? existing, TextBlock message, Action completed)
@@ -1373,7 +1626,7 @@ public partial class MainWindow : Window
         return card;
     }
 
-    private Border RequestCard(AccessRequest request)
+    private Border RequestCard(AccessRequest request, bool tenantPerspective = false)
     {
         var card = Card();
         card.Width = 380;
@@ -1387,23 +1640,73 @@ public partial class MainWindow : Window
         header.Children.Add(status);
         UIElement reason = string.IsNullOrWhiteSpace(request.RejectionReason)
             ? new TextBlock()
-            : new Border
-            {
-                Background = Brush("#FEF2F2"),
-                BorderBrush = Brush("#FECACA"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 6, 0, 0),
-                Child = Text($"Razlog odbijanja: {request.RejectionReason}", 12, "#991B1B")
-            };
+            : RejectionReasonBox(request.RejectionReason);
         card.Child = Stack(
             header,
             Text($"Zgrada {request.BuildingCode}, stan {request.ApartmentNumber}", 15, "#111827"),
             Text($"Stanar JMBG: {request.TenantJmbg}", 13, "#64748B"),
             Text($"Kreiran: {request.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}", 13, "#64748B"),
+            RequestOutcomeBlock(request, tenantPerspective),
             reason);
         return card;
+    }
+
+    private static Border RequestOutcomeBlock(AccessRequest request, bool tenantPerspective)
+    {
+        var message = request.Status switch
+        {
+            RequestStatus.Approved => tenantPerspective
+                ? "Vas zahtev je uspesno odobren."
+                : "Zahtev je uspesno odobren.",
+            RequestStatus.Rejected => tenantPerspective
+                ? "Vas zahtev je odbijen."
+                : "Zahtev je odbijen.",
+            _ => tenantPerspective
+                ? "Vas zahtev ceka obradu od strane upravnika."
+                : "Zahtev ceka obradu."
+        };
+
+        return new Border
+        {
+            Background = request.Status switch
+            {
+                RequestStatus.Approved => Brush("#F0FDF4"),
+                RequestStatus.Rejected => Brush("#FEF2F2"),
+                _ => Brush("#FFFBEB")
+            },
+            BorderBrush = request.Status switch
+            {
+                RequestStatus.Approved => Brush("#BBF7D0"),
+                RequestStatus.Rejected => Brush("#FECACA"),
+                _ => Brush("#FDE68A")
+            },
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(10),
+            Margin = new Thickness(0, 4, 0, 8),
+            Child = Text(message, 13, request.Status switch
+            {
+                RequestStatus.Approved => "#166534",
+                RequestStatus.Rejected => "#991B1B",
+                _ => "#92400E"
+            })
+        };
+    }
+
+    private static Border RejectionReasonBox(string reason)
+    {
+        return new Border
+        {
+            Background = Brush("#FEF2F2"),
+            BorderBrush = Brush("#FCA5A5"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(12),
+            Margin = new Thickness(0, 8, 0, 0),
+            Child = Stack(
+                Text("Razlog odbijanja", 12, "#991B1B"),
+                Text(reason, 13, "#7F1D1D"))
+        };
     }
 
     private void HandleGlobalShortcuts(object sender, KeyEventArgs e)
@@ -1456,7 +1759,66 @@ public partial class MainWindow : Window
 
     private static bool Confirm(string message)
     {
-        return MessageBox.Show(message, "Potvrda", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        var accepted = false;
+        var dialog = new Window
+        {
+            Title = "Potvrda",
+            Width = 380,
+            SizeToContent = SizeToContent.Height,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Brush("#F3F7FA"),
+            Owner = Application.Current?.MainWindow,
+            ShowInTaskbar = false
+        };
+
+        var yes = DialogButton("Potvrdi", "#FF5A1F", Brushes.White);
+        var no = DialogButton("Odustani", "#EDF6FB", Brush("#005D91"));
+        yes.IsDefault = true;
+        no.IsCancel = true;
+        yes.Click += (_, _) =>
+        {
+            accepted = true;
+            dialog.DialogResult = true;
+        };
+        no.Click += (_, _) =>
+        {
+            accepted = false;
+            dialog.DialogResult = false;
+        };
+
+        dialog.Content = new Border
+        {
+            Background = Brushes.White,
+            BorderBrush = Brush("#D7E5EA"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(20),
+            Margin = new Thickness(12),
+            Child = Stack(
+                Heading("Potvrda akcije", 20),
+                Text(message, 14, "#38546D"),
+                CompactRow(yes, no))
+        };
+
+        dialog.ShowDialog();
+        return accepted;
+    }
+
+    private static Button DialogButton(string text, string background, Brush foreground)
+    {
+        return new Button
+        {
+            Content = text,
+            Background = Brush(background),
+            Foreground = foreground,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(14, 7, 14, 7),
+            Margin = new Thickness(0, 8, 8, 0),
+            MinWidth = 108,
+            Height = 36,
+            Cursor = System.Windows.Input.Cursors.Hand
+        };
     }
 
     private void SetContent(UIElement element)
@@ -1564,10 +1926,12 @@ public partial class MainWindow : Window
 
         if (tips.Length > 0)
         {
-            var wrap = new WrapPanel { Margin = new Thickness(0, 4, 0, 0) };
+            var wrap = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
             foreach (var tip in tips)
             {
-                wrap.Children.Add(Badge(tip, "#E0F2FE", "#075985"));
+                var badge = Badge(tip, "#E0F2FE", "#075985");
+                badge.Margin = new Thickness(0, 0, 0, 4);
+                wrap.Children.Add(badge);
             }
             content.Children.Add(wrap);
         }
@@ -1631,17 +1995,22 @@ public partial class MainWindow : Window
     private static Border ActionCard(string title, string helper, string accent, Action action)
     {
         var button = Button("Otvori", "PrimaryButton");
+        button.HorizontalAlignment = HorizontalAlignment.Stretch;
+        button.Margin = new Thickness(0, 10, 0, 0);
         button.Click += (_, args) =>
         {
             args.Handled = true;
             action();
         };
         var card = Card();
-        card.Width = 300;
-        card.MinHeight = 190;
+        card.Width = 286;
+        card.MinHeight = 178;
         card.Cursor = System.Windows.Input.Cursors.Hand;
         card.MouseLeftButtonUp += (_, _) => action();
-        card.Child = Stack(
+        var dock = new DockPanel();
+        DockPanel.SetDock(button, Dock.Bottom);
+        dock.Children.Add(button);
+        dock.Children.Add(Stack(
             new Border
             {
                 Background = Brush(accent),
@@ -1652,8 +2021,8 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 0, 0, 14)
             },
             Heading(title, 22),
-            Text(helper, 14, "#52677A"),
-            button);
+            Text(helper, 14, "#52677A")));
+        card.Child = dock;
         return card;
     }
 
@@ -1816,9 +2185,9 @@ public partial class MainWindow : Window
     {
         return status switch
         {
-            RequestStatus.Approved => Badge("Approved", "#DCFCE7", "#166534"),
-            RequestStatus.Rejected => Badge("Rejected", "#FEE2E2", "#991B1B"),
-            _ => Badge("Pending", "#FEF3C7", "#92400E")
+            RequestStatus.Approved => Badge("Odobren", "#DCFCE7", "#166534"),
+            RequestStatus.Rejected => Badge("Odbijen", "#FEE2E2", "#991B1B"),
+            _ => Badge("Ceka odobrenje", "#FEF3C7", "#92400E")
         };
     }
 
@@ -1826,9 +2195,9 @@ public partial class MainWindow : Window
     {
         return status switch
         {
-            BuildingStatus.Approved => Badge("Approved", "#DCFCE7", "#166534"),
-            BuildingStatus.Rejected => Badge("Rejected", "#FEE2E2", "#991B1B"),
-            _ => Badge("Pending", "#FEF3C7", "#92400E")
+            BuildingStatus.Approved => Badge("Odobrena", "#DCFCE7", "#166534"),
+            BuildingStatus.Rejected => Badge("Odbijena", "#FEE2E2", "#991B1B"),
+            _ => Badge("Ceka odobrenje", "#FEF3C7", "#92400E")
         };
     }
 
@@ -2010,4 +2379,18 @@ public partial class MainWindow : Window
     {
         return (SolidColorBrush)new BrushConverter().ConvertFromString(color)!;
     }
+
+    private sealed record ApartmentTableRow(
+        int ApartmentNumber,
+        string Description,
+        int RoomCount,
+        int MaxTenantCount,
+        int CurrentTenantCount,
+        int FreePlaces,
+        string Status);
+
+    private sealed record ApartmentOccupancy(
+        int CurrentTenantCount,
+        int FreePlaces,
+        string Status);
 }

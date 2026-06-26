@@ -25,7 +25,7 @@ public sealed class AppServices
         var validationService = new ValidationService(Users, Buildings, Apartments);
         Auth = new AuthService(Users);
         SharedBuildings = new SharedBuildingService(Buildings, Apartments);
-        Tenants = new TenantService(Users, AccessRequests, ApartmentMemberships, validationService);
+        Tenants = new TenantService(Users, AccessRequests, validationService);
         Managers = new ManagerService(Buildings, Apartments, AccessRequests, ApartmentMemberships, validationService);
         Admins = new AdminService(Users, Buildings, validationService);
     }

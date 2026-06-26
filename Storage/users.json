@@ -53,5 +53,16 @@
     "MobilePhone": "0644444444",
     "UserType": "Tenant",
     "CreatedAt": "2026-04-10T20:08:00Z"
+  },
+  {
+    "$type": "buildingManager",
+    "Jmbg": "123",
+    "Email": "bor@gmail.com",
+    "Password": "Ucenik01",
+    "FirstName": "Bibi",
+    "LastName": "bobo",
+    "MobilePhone": "123",
+    "UserType": "BuildingManager",
+    "CreatedAt": "2026-06-25T14:23:53.449805Z"
   }
 ]

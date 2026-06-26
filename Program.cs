@@ -21,7 +21,7 @@ storageInitializer.Initialize();
 var validationService = new ValidationService(userRepository, buildingRepository, apartmentRepository);
 IAuthService authService = new AuthService(userRepository);
 ISharedBuildingService sharedBuildingService = new SharedBuildingService(buildingRepository, apartmentRepository);
-ITenantService tenantService = new TenantService(userRepository, accessRequestRepository, apartmentMembershipRepository, validationService);
+ITenantService tenantService = new TenantService(userRepository, accessRequestRepository, validationService);
 IManagerService managerService = new ManagerService(buildingRepository, apartmentRepository, accessRequestRepository, apartmentMembershipRepository, validationService);
 IAdminService adminService = new AdminService(userRepository, buildingRepository, validationService);
 

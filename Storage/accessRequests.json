@@ -5,10 +5,10 @@
     "BuildingCode": "B001",
     "ApartmentNumber": 2,
     "CreatedAt": "2026-04-10T20:20:00Z",
-    "Status": "PendingApproval",
-    "RejectionReason": null,
-    "ResolvedAt": null,
-    "ResolvedByManagerJmbg": null
+    "Status": "Rejected",
+    "RejectionReason": "Pogresan broj stana.",
+    "ResolvedAt": "2026-06-26T17:42:37.3665691Z",
+    "ResolvedByManagerJmbg": "1111111111111"
   },
   {
     "Id": "REQPEND2",
@@ -16,10 +16,10 @@
     "BuildingCode": "B001",
     "ApartmentNumber": 2,
     "CreatedAt": "2026-04-10T20:21:00Z",
-    "Status": "PendingApproval",
+    "Status": "Approved",
     "RejectionReason": null,
-    "ResolvedAt": null,
-    "ResolvedByManagerJmbg": null
+    "ResolvedAt": "2026-06-26T17:42:24.7061471Z",
+    "ResolvedByManagerJmbg": "1111111111111"
   },
   {
     "Id": "REQAPP1",
@@ -41,6 +41,72 @@
     "Status": "Rejected",
     "RejectionReason": "Pogresan broj stana.",
     "ResolvedAt": "2026-04-10T20:31:00Z",
+    "ResolvedByManagerJmbg": "1111111111111"
+  },
+  {
+    "Id": "REQPEND3",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 6,
+    "CreatedAt": "2026-04-10T20:24:00Z",
+    "Status": "Rejected",
+    "RejectionReason": "bla",
+    "ResolvedAt": "2026-06-26T18:13:00.2484272Z",
+    "ResolvedByManagerJmbg": "1111111111111"
+  },
+  {
+    "Id": "REQPEND4",
+    "TenantJmbg": "4444444444444",
+    "BuildingCode": "B005",
+    "ApartmentNumber": 8,
+    "CreatedAt": "2026-04-10T20:25:00Z",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "ResolvedAt": null,
+    "ResolvedByManagerJmbg": null
+  },
+  {
+    "Id": "F58958D4",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 2,
+    "CreatedAt": "2026-06-26T18:19:49.6767328Z",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "ResolvedAt": null,
+    "ResolvedByManagerJmbg": null
+  },
+  {
+    "Id": "A33185D2",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B001",
+    "ApartmentNumber": 1,
+    "CreatedAt": "2026-06-26T18:28:00.5814922Z",
+    "Status": "PendingApproval",
+    "RejectionReason": null,
+    "ResolvedAt": null,
+    "ResolvedByManagerJmbg": null
+  },
+  {
+    "Id": "9F583152",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B005",
+    "ApartmentNumber": 8,
+    "CreatedAt": "2026-06-26T18:29:13.9636946Z",
+    "Status": "Rejected",
+    "RejectionReason": "NEIN",
+    "ResolvedAt": "2026-06-26T18:30:55.6332269Z",
+    "ResolvedByManagerJmbg": "1111111111111"
+  },
+  {
+    "Id": "0A86EC5C",
+    "TenantJmbg": "3333333333333",
+    "BuildingCode": "B010",
+    "ApartmentNumber": 3,
+    "CreatedAt": "2026-06-26T18:29:49.2523769Z",
+    "Status": "Approved",
+    "RejectionReason": null,
+    "ResolvedAt": "2026-06-26T18:30:37.4933049Z",
     "ResolvedByManagerJmbg": "1111111111111"
   }
 ]
